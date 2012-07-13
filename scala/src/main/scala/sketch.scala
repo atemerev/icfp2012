@@ -249,10 +249,10 @@ trait WorldsImpl extends Worlds {
       w
     }
 
-    override def toString = data.map(_.mkString).mkString("\n")
+    override def toString = data.reverse.map(_.mkString).mkString("\n")
   }
 
-  def mkWorld(data: String) = World(data.split("\n").map(_.map(c => Item.unapply(c).get).toArray.toList).toList)
+  def mkWorld(data: String) = World(data.split("\n").map(_.map(c => Item.unapply(c).get).toArray.toList).toList.reverse)
 }
 
 object Validator extends App with Worlds with WorldsImpl {
@@ -270,6 +270,9 @@ object Validator extends App with Worlds with WorldsImpl {
     sys.exit(0)
   }
   val result = commands.foldLeft(mkGame(map))((g, c) => {
+    println("Step: %s".format(c))
+    println(g.w)
+    println()
     g.step(c) match {
       case g: Game => g
       case g: Lost => exit(g)
