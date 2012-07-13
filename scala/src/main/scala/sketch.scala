@@ -334,9 +334,8 @@ object Interpreter extends App with Worlds with WorldsImpl {
   }
 
   def refresh(state: State) {
-    val isWindows = System.getProperty("os.name").toLowerCase.contains("windows")
-    val clearCommand = if (isWindows) "cls" else "clear"
-    Runtime.getRuntime.exec(clearCommand)
+    val cr = new jline.ConsoleReader()
+    cr.clearScreen()
     println(state.w)
   }
 }
