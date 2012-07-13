@@ -197,13 +197,13 @@ trait Worlds {
 
 trait WorldsImpl extends Worlds {
   case class World(data: List[List[Item]]) extends WorldApi {
-    def apply(p: Point) = if (data.isDefinedAt(p.x) && data(p.x).isDefinedAt(p.y)) data(p.x)(p.y) else Wall
+    def apply(p: Point) = if (data.isDefinedAt(p.x) && data(p.x).isDefinedAt(p.y)) data(p.y)(p.x) else Wall
 
     def update(p: Point, item: Item) =
       World(data.zipWithIndex map {
-        case (line, x) =>
+        case (line, y) =>
           line.zipWithIndex map {
-            case (_, y) if x == p.x && y == p.y => item
+            case (_, x) if x == p.x && y == p.y => item
             case (item, _) => item
           }
       })
