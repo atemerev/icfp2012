@@ -137,6 +137,10 @@ trait Worlds {
   }
 
   def mkWorld(lines: List[String]): World
+}
+
+trait Games {
+  self: Worlds =>
 
   sealed abstract class State(val w: World, val steps: Int, collectedLambdas: Int) {
     def score = 25 * collectedLambdas - steps
@@ -145,7 +149,6 @@ trait Worlds {
   }
 
   case class Game(override val w: World, override val steps: Int, collectedLambdas: Int, stepsUnderwater: Int) extends State(w, steps, collectedLambdas) {
-
     def status = "in progress"
     def step(c: Command): State =
       c match {
@@ -179,7 +182,6 @@ trait Worlds {
             case Open =>
               Won(w, steps + 1, nextLambdas)
             case _ =>
-
               Game(w, steps + 1, nextLambdas, stepsUnderwater1)
           }
       }
@@ -199,7 +201,20 @@ trait Worlds {
     override def score = super.score + 50 * collectedLambdas
   }
 
-  def mkGame(lines: List[String]): Game = Game(mkWorld(lines), 0, 0, 0)
+  def mkGame(world: World): Game = Game(world, 0, 0, 0)
+
+  def playGame(game: State, commands: Traversable[Command]): State =
+    commands.foldLeft(game)((s, c) =>
+      s match {
+        case g: Game =>
+          // println("Step: %s".format(c))
+          // println(g.w)
+          // println()
+          g.step(c)
+        case _ =>
+          s
+      }
+    )
 }
 
 trait WorldsImpl extends Worlds {
@@ -278,45 +293,30 @@ trait WorldsImpl extends Worlds {
   }
 }
 
-object Validator extends App with Worlds with WorldsImpl {
+object Validator extends App with Games with Worlds with WorldsImpl {
   if (args.length != 2) {
     println("usage: Validator <map filename> <commands>")
     System.exit(255)
   }
   val lines = scala.io.Source.fromFile(args(0)).getLines().toList
   println(lines mkString "\n")
-  println()
   val commands = args(1) map (Command.unapply(_).get)
-  def exit(g: State): Nothing = {
-    println("%d of %d steps: %s".format(g.steps, commands.length, (commands take g.steps).mkString))
-    println(g)
-    sys.exit(0)
-  }
-  val result = commands.foldLeft(mkGame(lines))((g, c) => {
-//    println("Step: %s".format(c))
-//    println(g.w)
-//    println()
-    g.step(c) match {
-      case g: Game => g
-      case g: Lost => exit(g)
-      case g: Aborted => exit(g)
-      case g: Won => exit(g)
-    }
-  })
-  exit(result)
+  val result = playGame(mkGame(mkWorld(lines)), commands)
+  println("%d of %d steps: %s".format(result.steps, commands.length, (commands take result.steps).mkString))
+  println(result)
 }
 
-object Interpreter extends App with Worlds with WorldsImpl {
+object Interpreter extends App with Games with Worlds with WorldsImpl {
   if (args.length != 1) {
     println("usage: Interpreter <map filename>")
     System.exit(255)
   }
 
   val lines = scala.io.Source.fromFile(args(0)).getLines().toList
-  var game: Game = mkGame(lines)
+  var game: Game = mkGame(mkWorld(lines))
   val moves = scala.collection.mutable.ListBuffer[Command]()
 
-  while(true) {
+  while (true) {
     render(game)
     val c = jline.Terminal.getTerminal.readVirtualKey(System.in)
     val nextCommand = c match {
@@ -344,4 +344,13 @@ object Interpreter extends App with Worlds with WorldsImpl {
     println(state.w)
     println("Score: %d (%s)".format(state.score, state.status))
   }
+}
+
+trait Genetic1 {
+  self: Games with Worlds =>
+
+  type TaggedSeq = List[(Point, Command)]
+  def gen(seed: Int): List[TaggedSeq]
+  def eval(s: TaggedSeq): Int
+  def crossover(s1: TaggedSeq, s2: TaggedSeq): TaggedSeq
 }
