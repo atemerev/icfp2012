@@ -4,5 +4,5 @@ lib_managed/
 src_managed/
 out/
 project/boot/
-workspace.xml
+.idea/workspace.xml
 
