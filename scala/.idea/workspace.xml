@@ -2,8 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="79da64db-bc70-4562-a235-d8ecc31ced70" name="Default" comment="">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/../src/main/scala/icfpc/OurApp.scala" afterPath="" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/../src/test/scala/icfpc/SomeTest.scala" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/sketch.scala" afterPath="$PROJECT_DIR$/src/main/scala/sketch.scala" />
     </list>
@@ -66,7 +64,7 @@
       <file leaf-file-name="sketch.scala" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/main/scala/sketch.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="248" column="70" selection-start="6208" selection-end="6208" vertical-scroll-proportion="0.012903226">
+            <state line="88" column="0" selection-start="1724" selection-end="1724" vertical-scroll-proportion="0.4191344">
               <folding />
             </state>
           </provider>
@@ -405,7 +403,11 @@
       <created>1342199745152</created>
       <updated>1342199745152</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Stage 3">
+      <created>1342199987218</created>
+      <updated>1342199987218</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -471,7 +473,7 @@
     <option name="SHOW_VCS_ERROR_NOTIFICATIONS" value="true" />
     <option name="FORCE_NON_EMPTY_COMMENT" value="false" />
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="false" />
-    <option name="LAST_COMMIT_MESSAGE" value="WIP" />
+    <option name="LAST_COMMIT_MESSAGE" value="Stage 3" />
     <option name="MAKE_NEW_CHANGELIST_ACTIVE" value="false" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="false" />
     <option name="CHECK_FILES_UP_TO_DATE_BEFORE_COMMIT" value="false" />
@@ -488,6 +490,7 @@
     <MESSAGE value="Stage 2" />
     <MESSAGE value="No message" />
     <MESSAGE value="WIP" />
+    <MESSAGE value="Stage 3" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
@@ -502,7 +505,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/sketch.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="248" column="70" selection-start="6208" selection-end="6208" vertical-scroll-proportion="0.012903226">
+        <state line="88" column="0" selection-start="1724" selection-end="1724" vertical-scroll-proportion="0.4191344">
           <folding />
         </state>
       </provider>

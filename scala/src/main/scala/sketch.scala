@@ -78,7 +78,6 @@ sealed trait Command {
 }
 
 object Command {
-
   def unapply(c: Char): Option[Command] = c match {
     case 'L' => Some(Left)
     case 'R' => Some(Right)
