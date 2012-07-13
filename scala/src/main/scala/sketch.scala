@@ -307,20 +307,17 @@ object Validator extends App with Worlds with WorldsImpl {
 }
 
 object Interpreter extends App with Worlds with WorldsImpl {
-
-  import scala.collection.mutable
-
   if (args.length != 1) {
     println("usage: Interpreter <map filename>")
     System.exit(255)
   }
+
   val lines = scala.io.Source.fromFile(args(0)).getLines().toList
   var game: Game = mkGame(lines)
-
-  val moves = mutable.ListBuffer[Command]()
+  val moves = scala.collection.mutable.ListBuffer[Command]()
 
   while(true) {
-    refresh(game)
+    render(game)
     val c = jline.Terminal.getTerminal.readVirtualKey(System.in)
     val nextCommand = c match {
       case 'w' => Up
@@ -335,16 +332,16 @@ object Interpreter extends App with Worlds with WorldsImpl {
     nextState match {
       case g: Game => game = g
       case _ =>
-        refresh(nextState)
+        render(nextState)
         println("Moves: " + moves.mkString + "\n")
         System.exit(0)
     }
   }
 
-  def refresh(state: State) {
+  def render(state: State) {
     val cr = new jline.ConsoleReader()
     cr.clearScreen()
     println(state.w)
-    println("Score: %d".format(state.score))
+    println("Score: %d (%s)".format(state.score, state.status))
   }
 }
