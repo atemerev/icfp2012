@@ -135,22 +135,20 @@ trait Worlds {
 
   def mkWorld(data: String): World
 
-  sealed abstract class State(w: World, steps: Int, ls: Int) {
+  sealed abstract class State(w: World, val steps: Int, ls: Int) {
     def score = 25 * ls - steps
 
     def status: String
-    override def toString = {
-      println("status = " + status)
-      println(w)
-    }
+
+    override def toString = "status = " + status + "\n" + w
   }
 
-  case class Game(w: World, steps: Int, ls: Int) extends State(w, steps, ls) {
+  case class Game(w: World, override val steps: Int, ls: Int) extends State(w, steps, ls) {
     def status = "in progress"
     def step(c: Command): State =
       c match {
         case Abort =>
-          Aborted(steps + 1, ls) // steps + 1 or steps?
+          Aborted(w, steps + 1, ls) // steps + 1 or steps?
         case _ =>
           var w = this.w
 
@@ -172,25 +170,25 @@ trait Worlds {
           val nextLs = ls + w.ls - this.w.ls
           this.w(nextR) match {
             case _ if w.r == Invalid =>
-              Lost(steps + 1, nextLs)
+              Lost(w, steps + 1, nextLs)
             case Open =>
-              Won(steps + 1, nextLs)
+              Won(w, steps + 1, nextLs)
             case _ =>
               Game(w, steps + 1, nextLs)
           }
       }
     }
 
-  case class Lost(w: World, steps: Int, ls: Int) extends State(w, steps, ls) {
+  case class Lost(w: World, override val steps: Int, ls: Int) extends State(w, steps, ls) {
     def status = "lost"
   }
 
-  case class Aborted(w: World, steps: Int, ls: Int) extends State(w, steps, ls) {
+  case class Aborted(w: World, override val steps: Int, ls: Int) extends State(w, steps, ls) {
     def status = "aborted"
     override def score = super.score + 25 * ls
   }
 
-  case class Won(w: World, steps: Int, ls: Int) extends State(w, steps, ls) {
+  case class Won(w: World, override val steps: Int, ls: Int) extends State(w, steps, ls) {
     def status = "won"
     override def score = super.score + 50 * ls
   }
@@ -201,7 +199,16 @@ trait Worlds {
 trait WorldsImpl extends Worlds {
   case class World(data: List[List[Item]]) extends WorldApi {
     def apply(p: Point) = if (data.isDefinedAt(p.x) && data(p.x).isDefinedAt(p.y)) data(p.x)(p.y) else Wall
-    def update(point: Point, item: Item) = ???
+
+    def update(p: Point, item: Item) =
+      World(data.zipWithIndex map {
+        case (line, x) =>
+          line.zipWithIndex map {
+            case (_, y) if x == p.x && y == p.y => item
+            case (item, _) => item
+          }
+      })
+
     def h = data.length
     def w = data(0).length
 
@@ -212,10 +219,9 @@ trait WorldsImpl extends Worlds {
 
     def ls = data.flatten.count(_ == Lambda)
 
-    private def putRock(p: Point) {
+    private def putRock(p: Point): World = {
       var w = update(p, Rock)
-      if (w(p.x, p.y - 1) == Robot)
-        w = w.update((p.x, p.y - 1), Empty)
+      if (w(p.x, p.y - 1) == Robot) w = w.update((p.x, p.y - 1), Empty)
       w
     }
 
@@ -223,20 +229,20 @@ trait WorldsImpl extends Worlds {
       var w = this
 
       for (x <- 0 to this.w; y <- 0 to this.h) {
-        if (w(x, y) == Rock && w(x, y - 1) == Empty) {
+        if (this(x, y) == Rock && this(x, y - 1) == Empty) {
           w = w.update((x, y), Empty)
           w = w.putRock(x, y - 1)
-        } else if (w(x,y) == Rock && w(x, y - 1) == Rock && w(x + 1, y) == Empty && w(x + 1, y - 1) == Empty) {
+        } else if (this(x,y) == Rock && this(x, y - 1) == Rock && this(x + 1, y) == Empty && this(x + 1, y - 1) == Empty) {
           w = w.update((x, y), Empty)
           w = w.putRock(x + 1, y - 1)
-        } else if (w(x,y) == Rock && w(x, y - 1) == Rock &&
-          (w(x + 1, y) != Empty || (w(x + 1, y - 1) != Empty && w(x - 1, y) == Empty && w(x - 1, y - 1) == Empty))) {
+        } else if (this(x,y) == Rock && this(x, y - 1) == Rock &&
+          (this(x + 1, y) != Empty || (this(x + 1, y - 1) != Empty && this(x - 1, y) == Empty && this(x - 1, y - 1) == Empty))) {
           w = w.update((x, y), Empty)
           w = w.putRock(x - 1, y - 1)
-        } else if (w(x,y) == Rock && w(x, y - 1) == Lambda && w(x + 1, y) == Empty && w(x + 1, y - 1) == Empty) {
+        } else if (this(x,y) == Rock && this(x, y - 1) == Lambda && this(x + 1, y) == Empty && this(x + 1, y - 1) == Empty) {
           w = w.update((x, y), Empty)
           w = w.putRock(x + 1, y - 1)
-        } else if (w(x,y) == Closed && ls == 0) {
+        } else if (this(x,y) == Closed && ls == 0) {
           w = w.update((x, y), Open)
         }
       }
@@ -250,24 +256,26 @@ trait WorldsImpl extends Worlds {
 }
 
 object Validator extends App with Worlds with WorldsImpl {
-  val mine = scala.io.Source.fromInputStream(System.in).getLines.mkString("\n")
-  if (mine.isEmpty || args.length != 1) {
-    println("usage: Validator <command> < <map>")
-  } else {
-    def exit(g: Game) = {
-      println("%d of %d steps: %s", g.steps, commands, commands take g.steps)
-      println(g)
-      sys.exit(0)
-    }
-    val commands = args(0)
-    val result = commands.reduce(mkGame(mine))((g, c) => {
-      g.step match {
-        case g: Game => g
-        case g: Lost => exit(g)
-        case g: Aborted => exit(g)
-        case g: Won => exit(g)
-      }
-    })
-    exit(result)
+  if (args.length != 2) {
+    println("usage: Validator <map filename> <commands>")
+    System.exit(255)
   }
+  val map = scala.io.Source.fromFile(args(0)).getLines().mkString("\n")
+  println(map)
+  println()
+  val commands = args(1) map (Command.unapply(_).get)
+  def exit(g: State): Nothing = {
+    println("%d of %d steps: %s".format(g.steps, commands.length, (commands take g.steps).mkString))
+    println(g)
+    sys.exit(0)
+  }
+  val result = commands.foldLeft(mkGame(map))((g, c) => {
+    g.step(c) match {
+      case g: Game => g
+      case g: Lost => exit(g)
+      case g: Aborted => exit(g)
+      case g: Won => exit(g)
+    }
+  })
+  exit(result)
 }
