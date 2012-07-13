@@ -172,7 +172,7 @@ trait Worlds {
 
           w = w.evolve
 
-          val nextLambdas = collectedLambdas + w.remainingLambdas - this.w.remainingLambdas
+          val nextLambdas = collectedLambdas + this.w.remainingLambdas - w.remainingLambdas
           this.w(nextR) match {
             case _ if w.robot == Invalid =>
               Lost(w, steps + 1, nextLambdas)
@@ -307,6 +307,9 @@ object Validator extends App with Worlds with WorldsImpl {
 }
 
 object Interpreter extends App with Worlds with WorldsImpl {
+
+  import scala.collection.mutable
+
   if (args.length != 1) {
     println("usage: Interpreter <map filename>")
     System.exit(255)
@@ -314,21 +317,26 @@ object Interpreter extends App with Worlds with WorldsImpl {
   val lines = scala.io.Source.fromFile(args(0)).getLines().toList
   var game: Game = mkGame(lines)
 
+  val moves = mutable.ListBuffer[Command]()
+
   while(true) {
     refresh(game)
     val c = jline.Terminal.getTerminal.readVirtualKey(System.in)
-    val nextState = c match {
-      case 'w' => game.step(Up)
-      case 's' => game.step(Down)
-      case 'a' => game.step(Left)
-      case 'd' => game.step(Right)
-      case ' ' => game.step(Abort)
-      case _ => game.step(Wait)
+    val nextCommand = c match {
+      case 'w' => Up
+      case 's' => Down
+      case 'a' => Left
+      case 'd' => Right
+      case ' ' => Abort
+      case _ => Wait
     }
+    val nextState = game.step(nextCommand)
+    moves += nextCommand
     nextState match {
       case g: Game => game = g
       case _ =>
         refresh(nextState)
+        println("Moves: " + moves.mkString + "\n")
         System.exit(0)
     }
   }
@@ -337,5 +345,6 @@ object Interpreter extends App with Worlds with WorldsImpl {
     val cr = new jline.ConsoleReader()
     cr.clearScreen()
     println(state.w)
+    println("Score: %d".format(state.score))
   }
 }
