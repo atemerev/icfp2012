@@ -17,7 +17,6 @@ object Prelude {
 }
 
 import Prelude._
-import collection.immutable
 
 sealed trait Item {
   def isPassable: Boolean
@@ -35,6 +34,12 @@ object Item {
     case 'O' => Some(Open)
     case _ => None
   }
+}
+
+case object Rock extends Item {
+  override def toString = "*"
+
+  def isPassable = false
 }
 
 case object Rock extends Item {
@@ -175,7 +180,7 @@ trait Worlds {
 
       c match {
         case Abort =>
-          Abort(steps + 1, ls) // steps + 1 or steps?
+          Aborted(steps + 1, ls) // steps + 1 or steps?
         case _ =>
           var w = this.w
 
@@ -189,6 +194,7 @@ trait Worlds {
               w = w.update(w.r, Empty)
               w = w.update(nextR, Robot)
               w = w.update(afterR, Rock)
+            case _ => // do nothing
           }
 
           w = w.evolve
@@ -208,12 +214,12 @@ trait Worlds {
 
   case class Lost(steps: Int, ls: Int) extends State(steps, ls)
 
-  case class Abort(steps: Int, ls: Int) extends State(steps, ls) {
-    def score = super.score + 25 * ls
+  case class Aborted(steps: Int, ls: Int) extends State(steps, ls) {
+    override def score = super.score + 25 * ls
   }
 
   case class Won(steps: Int, ls: Int) extends State(steps, ls) {
-    def score = super.score + 50 * ls
+    override def score = super.score + 50 * ls
   }
 
   def mkGame(data: String): Game = Game(mkWorld(data), 0, 0)
@@ -231,13 +237,46 @@ trait WorldsImpl extends Worlds {
 
     def w = data(0).length
 
-    def r = ???
-
-    def ls = ???
-
-    def evolve = {
-      ???
+    def r: Point = {
+      for (x <- 0 to w; y <- 0 to h if this(x, y) == Robot) return Point(x, y)
+      Invalid
     }
+
+    def ls = data.flatten.count(_ == Lambda)
+
+    private def putRock(p: Point) {
+      var w = update(p, Rock)
+      if (w(p.x, p.y - 1) == Robot)
+        w = w.update((p.x, p.y - 1), Empty)
+      w
+    }
+
+    def evolve: World = {
+      var w = this
+
+      for (x <- 0 to this.w; y <- 0 to this.h) {
+        if (w(x, y) == Rock && w(x, y - 1) == Empty) {
+          w = w.update((x, y), Empty)
+          w = w.putRock(x, y - 1)
+        } else if (w(x,y) == Rock && w(x, y - 1) == Rock && w(x + 1, y) == Empty && w(x + 1, y - 1) == Empty) {
+          w = w.update((x, y), Empty)
+          w = w.putRock(x + 1, y - 1)
+        } else if (w(x,y) == Rock && w(x, y - 1) == Rock &&
+          (w(x + 1, y) != Empty || (w(x + 1, y - 1) != Empty && w(x - 1, y) == Empty && w(x - 1, y - 1) == Empty))) {
+          w = w.update((x, y), Empty)
+          w = w.putRock(x - 1, y - 1)
+        } else if (w(x,y) == Rock && w(x, y - 1) == Lambda && w(x + 1, y) == Empty && w(x + 1, y - 1) == Empty) {
+          w = w.update((x, y), Empty)
+          w = w.putRock(x + 1, y - 1)
+        } else if (w(x,y) == Closed && ls == 0) {
+          w = w.update((x, y), Open)
+        }
+      }
+      w
+    }
+
+    override def toString = data.map(_.mkString).mkString("\n")
+
   }
 
   def mkWorld(data: String) = World(data.split("\n").map(_.map(c => Item.unapply(c).get).toArray.toList).toList)
