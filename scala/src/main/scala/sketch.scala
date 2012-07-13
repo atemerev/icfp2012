@@ -1,7 +1,6 @@
 package icfp
 
 object Prelude {
-
   case class Point(x: Int, y: Int) {
     def +(p: Point) = Point(x + p.x, y + p.y)
   }
@@ -11,9 +10,7 @@ object Prelude {
   def ??? = throw new RuntimeException
 
   implicit def pointToTuple(p: Point): (Int, Int) = (p.x, p.y)
-
   implicit def tupleToPoint(t: (Int, Int)): Point = Point(t._1, t._2)
-
 }
 
 import Prelude._
@@ -38,55 +35,41 @@ object Item {
 
 case object Rock extends Item {
   override def toString = "*"
-
-  def isPassable = false
-}
-
-case object Rock extends Item {
-  override def toString = "*"
-
   def isPassable = false
 }
 
 case object Earth extends Item {
   override def toString = "."
-
   def isPassable = true
 }
 
 case object Empty extends Item {
   override def toString = " "
-
   def isPassable = true
 }
 
 case object Lambda extends Item {
   override def toString = "\\"
-
   def isPassable = true
 }
 
 case object Wall extends Item {
   override def toString = "#"
-
   def isPassable = false
 }
 
 case object Robot extends Item {
   override def toString = "R"
-
   def isPassable = false
 }
 
 case object Closed extends Item {
   override def toString = "L"
-
   def isPassable = false
 }
 
 case object Open extends Item {
   override def toString = "O"
-
   def isPassable = false
 }
 
@@ -108,76 +91,63 @@ object Command {
 }
 
 case object Left extends Command {
-
   def dir = (-1, 0)
-
   override def toString = "L"
 }
 
 case object Right extends Command {
   def dir = (1, 0)
-
   override def toString = "R"
 }
 
 case object Up extends Command {
-
   def dir = (0, 1)
-
   override def toString = "U"
 }
 
 case object Down extends Command {
-
   def dir = (0, -1)
-
   override def toString = "D"
 }
 
 case object Wait extends Command {
-
   def dir = (0, 0)
-
   override def toString = "W"
 }
 
 case object Abort extends Command {
-
   def dir = (0, 0)
-
   override def toString = "A"
 }
 
 trait Worlds {
-
   type World <: WorldApi
 
   trait WorldApi {
-
     def apply(point: Point): Item
-
     def update(point: Point, item: Item): World
-
     def h: Int
-
     def w: Int
-
     def ls: Int
-
     def r: Point
-
     def evolve: World
   }
 
   def mkWorld(data: String): World
 
-  sealed abstract class State(steps: Int, ls: Int) {
+  sealed abstract class State(w: World, steps: Int, ls: Int) {
     def score = 25 * ls - steps
+
+    def status: String
+    override def toString = {
+      println("status = " + status)
+      println(w)
+    }
   }
 
-  case class Game(w: World, steps: Int, ls: Int) extends State(steps, ls) {
-    def step(c: Command): State = {
-
+  case class Game(w: World, steps: Int, ls: Int) extends State(w, steps, ls) {
+    def status = "in progress"
+    def step(c: Command): State =
       c match {
         case Abort =>
           Aborted(steps + 1, ls) // steps + 1 or steps?
@@ -210,15 +180,18 @@ trait Worlds {
           }
       }
     }
+
+  case class Lost(w: World, steps: Int, ls: Int) extends State(w, steps, ls) {
+    def status = "lost"
   }
 
-  case class Lost(steps: Int, ls: Int) extends State(steps, ls)
-
-  case class Aborted(steps: Int, ls: Int) extends State(steps, ls) {
+  case class Aborted(w: World, steps: Int, ls: Int) extends State(w, steps, ls) {
+    def status = "aborted"
     override def score = super.score + 25 * ls
   }
 
-  case class Won(steps: Int, ls: Int) extends State(steps, ls) {
+  case class Won(w: World, steps: Int, ls: Int) extends State(w, steps, ls) {
+    def status = "won"
     override def score = super.score + 50 * ls
   }
 
@@ -226,15 +199,10 @@ trait Worlds {
 }
 
 trait WorldsImpl extends Worlds {
-
   case class World(data: List[List[Item]]) extends WorldApi {
-
     def apply(p: Point) = if (data.isDefinedAt(p.x) && data(p.x).isDefinedAt(p.y)) data(p.x)(p.y) else Wall
-
     def update(point: Point, item: Item) = ???
-
     def h = data.length
-
     def w = data(0).length
 
     def r: Point = {
@@ -276,12 +244,30 @@ trait WorldsImpl extends Worlds {
     }
 
     override def toString = data.map(_.mkString).mkString("\n")
-
   }
 
   def mkWorld(data: String) = World(data.split("\n").map(_.map(c => Item.unapply(c).get).toArray.toList).toList)
 }
 
-object Sketch extends Worlds with WorldsImpl
-
-
+object Validator extends App with Worlds with WorldsImpl {
+  val mine = scala.io.Source.fromInputStream(System.in).getLines.mkString("\n")
+  if (mine.isEmpty || args.length != 1) {
+    println("usage: Validator <command> < <map>")
+  } else {
+    def exit(g: Game) = {
+      println("%d of %d steps: %s", g.steps, commands, commands take g.steps)
+      println(g)
+      sys.exit(0)
+    }
+    val commands = args(0)
+    val result = commands.reduce(mkGame(mine))((g, c) => {
+      g.step match {
+        case g: Game => g
+        case g: Lost => exit(g)
+        case g: Aborted => exit(g)
+        case g: Won => exit(g)
+      }
+    })
+    exit(result)
+  }
+}
