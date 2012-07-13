@@ -138,13 +138,13 @@ trait Worlds {
 
   def mkWorld(lines: List[String]): World
 
-  sealed abstract class State(w: World, val steps: Int, collectedLambdas: Int) {
+  sealed abstract class State(val w: World, val steps: Int, collectedLambdas: Int) {
     def score = 25 * collectedLambdas - steps
     def status: String
     override def toString = "status = " + status + "\n" + w
   }
 
-  case class Game(w: World, override val steps: Int, collectedLambdas: Int, stepsUnderwater: Int) extends State(w, steps, collectedLambdas) {
+  case class Game(override val w: World, override val steps: Int, collectedLambdas: Int, stepsUnderwater: Int) extends State(w, steps, collectedLambdas) {
 
     def status = "in progress"
     def step(c: Command): State =
@@ -185,18 +185,18 @@ trait Worlds {
       }
     }
 
-  case class Lost(w: World, override val steps: Int, lambdas: Int) extends State(w, steps, lambdas) {
+  case class Lost(override val w: World, override val steps: Int, collectedLambdas: Int) extends State(w, steps, collectedLambdas) {
     def status = "lost"
   }
 
-  case class Aborted(w: World, override val steps: Int, lambdas: Int) extends State(w, steps, lambdas) {
+  case class Aborted(override val w: World, override val steps: Int, collectedLambdas: Int) extends State(w, steps, collectedLambdas) {
     def status = "aborted"
-    override def score = super.score + 25 * lambdas
+    override def score = super.score + 25 * collectedLambdas
   }
 
-  case class Won(w: World, override val steps: Int, lambdas: Int) extends State(w, steps, lambdas) {
+  case class Won(override val w: World, override val steps: Int, collectedLambdas: Int) extends State(w, steps, collectedLambdas) {
     def status = "won"
-    override def score = super.score + 50 * lambdas
+    override def score = super.score + 50 * collectedLambdas
   }
 
   def mkGame(lines: List[String]): Game = Game(mkWorld(lines), 0, 0, 0)
@@ -304,4 +304,39 @@ object Validator extends App with Worlds with WorldsImpl {
     }
   })
   exit(result)
+}
+
+object Interpreter extends App with Worlds with WorldsImpl {
+  if (args.length != 1) {
+    println("usage: Interpreter <map filename>")
+    System.exit(255)
+  }
+  val lines = scala.io.Source.fromFile(args(0)).getLines().toList
+  var game: Game = mkGame(lines)
+
+  while(true) {
+    refresh(game)
+    val c = jline.Terminal.getTerminal.readVirtualKey(System.in)
+    val nextState = c match {
+      case 'w' => game.step(Up)
+      case 's' => game.step(Down)
+      case 'a' => game.step(Left)
+      case 'd' => game.step(Right)
+      case ' ' => game.step(Abort)
+      case _ => game.step(Wait)
+    }
+    nextState match {
+      case g: Game => game = g
+      case _ =>
+        refresh(nextState)
+        System.exit(0)
+    }
+  }
+
+  def refresh(state: State) {
+    val isWindows = System.getProperty("os.name").toLowerCase.contains("windows")
+    val clearCommand = if (isWindows) "cls" else "clear"
+    Runtime.getRuntime.exec(clearCommand)
+    println(state.w)
+  }
 }

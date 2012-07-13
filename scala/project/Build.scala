@@ -13,11 +13,13 @@ object BuildSettings {
     scalaVersion := buildScalaVersion,
     shellPrompt  := ShellPrompt.buildShellPrompt,
     libraryDependencies ++= Seq(
-      "org.scalatest" %% "scalatest" % "1.8" % "test"
+      "org.scalatest" %% "scalatest" % "1.8" % "test",
+      "jline" % "jline" % "0.9.9"
     ),
     resolvers ++= Seq(
       "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases"
-    )
+    ),
+    mainClass := Some("icfp.Interpreter")
   )
 }
 
