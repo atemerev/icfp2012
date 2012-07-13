@@ -212,9 +212,9 @@ trait WorldsImpl extends Worlds {
     def h = data.length
     def w = data(0).length
 
-    def water = metadata("Water").toInt
-    def flooding = metadata("Flooding").toInt
-    def waterproof = metadata("Waterproof").toInt
+    def water = metadata.getOrElse("Water", "0").toInt
+    def flooding = metadata.getOrElse("Flooding", "0").toInt
+    def waterproof = metadata.getOrElse("Waterproof", "10").toInt
 
     def robot: Point = {
       for (x <- 0 to w; y <- 0 to h if this(x, y) == Robot) return Point(x, y)
