@@ -162,40 +162,46 @@ trait Worlds {
 
   def mkWorld(data: String): World
 
-  case class Log(w: World, steps: Int, ls: Int) {
-    def next(c: Command): Log = {
-      var w = this.w
-      val nextR = w.r + c.dir
-      val afterR = nextR + c.dir
+  case class State(w: World, steps: Int, ls: Int) {
+    def next(c: Command): State = {
 
       c match {
-        case Up | Down | Left | Right if w(nextR).isPassable =>
-          w(w.r) = Empty
-          w(nextR) = Robot
-        case Left | Right if w(nextR) == Rock && w(afterR) == Empty =>
-          w(w.r) = Empty
-          w(nextR) = Robot
-          w(afterR) = Rock
+        case Abort =>
+        case _ =>
+          var w = this.w
+          val nextR = w.r + c.dir
+          val afterR = nextR + c.dir
+
+          c match {
+            case Up | Down | Left | Right if w(nextR).isPassable =>
+              w = w.update(w.r, Empty)
+              w = w.update(nextR, Robot)
+            case Left | Right if w(nextR) == Rock && w(afterR) == Empty =>
+              w = w.update(w.r, Empty)
+              w = w.update(nextR, Robot)
+              w = w.update(afterR, Rock)
+          }
+          State(w, steps + 1, ls + (if(this.w(nextR) == Lambda) 1 else 0))
       }
 
-      Log(w, steps + 1, ls + (if(this.w(nextR) == Lambda) 1 else 0))
+
     }
   }
 
-  def mkLog(data: String): Log = ???
+  def mkState(data: String): State = ???
 
 
 }
 
 trait WorldsImpl extends Worlds {
 
-  case class World(array: List[List[Item]]) extends WorldApi {
+  case class World(data: List[List[Item]]) extends WorldApi {
 
-    def apply(p: Point) = if (array.isDefinedAt(p.x) && array(p.x).isDefinedAt(p.y)) array(p.x)(p.y) else Wall
+    def apply(p: Point) = if (data.isDefinedAt(p.x) && data(p.x).isDefinedAt(p.y)) data(p.x)(p.y) else Wall
 
-    def h = array.length
+    def h = data.length
 
-    def w = array(0).length
+    def w = data(0).length
 
     def r = ???
 
