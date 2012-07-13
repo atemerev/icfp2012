@@ -269,9 +269,9 @@ object Validator extends App with Worlds with WorldsImpl {
     sys.exit(0)
   }
   val result = commands.foldLeft(mkGame(map))((g, c) => {
-    println("Step: %s".format(c))
-    println(g.w)
-    println()
+//    println("Step: %s".format(c))
+//    println(g.w)
+//    println()
     g.step(c) match {
       case g: Game => g
       case g: Lost => exit(g)
