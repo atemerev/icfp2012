@@ -6,6 +6,8 @@ object Prelude {
     def +(p: Point) = Point(x + p.x, y + p.y)
   }
 
+  val Invalid = Point(-1, -1)
+
   def ??? = throw new RuntimeException
 
   implicit def pointToTuple(p: Point): (Int, Int) = (p.x, p.y)
@@ -147,10 +149,6 @@ trait Worlds {
 
   trait WorldApi {
 
-    def ls: Int
-
-    def r: Point
-
     def apply(point: Point): Item
 
     def update(point: Point, item: Item): World
@@ -158,20 +156,31 @@ trait Worlds {
     def h: Int
 
     def w: Int
+
+    def ls: Int
+
+    def r: Point
+
+    def evolve: World
   }
 
   def mkWorld(data: String): World
 
-  case class State(w: World, steps: Int, ls: Int) {
-    def next(c: Command): State = {
+  sealed abstract class State(steps: Int, ls: Int) {
+    def score = 25 * ls - steps
+  }
+
+  case class Game(w: World, steps: Int, ls: Int) extends State(steps, ls) {
+    def step(c: Command): State = {
 
       c match {
         case Abort =>
+          Abort(steps + 1, ls) // steps + 1 or steps?
         case _ =>
           var w = this.w
+
           val nextR = w.r + c.dir
           val afterR = nextR + c.dir
-
           c match {
             case Up | Down | Left | Right if w(nextR).isPassable =>
               w = w.update(w.r, Empty)
@@ -181,16 +190,33 @@ trait Worlds {
               w = w.update(nextR, Robot)
               w = w.update(afterR, Rock)
           }
-          State(w, steps + 1, ls + (if(this.w(nextR) == Lambda) 1 else 0))
+
+          w = w.evolve
+
+          val nextLs = ls + w.ls - this.w.ls
+          this.w(nextR) match {
+            case _ if w.r == Invalid =>
+              Lost(steps + 1, nextLs)
+            case Open =>
+              Won(steps + 1, nextLs)
+            case _ =>
+              Game(w, steps + 1, nextLs)
+          }
       }
-
-
     }
   }
 
-  def mkState(data: String): State = ???
+  case class Lost(steps: Int, ls: Int) extends State(steps, ls)
 
+  case class Abort(steps: Int, ls: Int) extends State(steps, ls) {
+    def score = super.score + 25 * ls
+  }
 
+  case class Won(steps: Int, ls: Int) extends State(steps, ls) {
+    def score = super.score + 50 * ls
+  }
+
+  def mkGame(data: String): Game = Game(mkWorld(data), 0, 0)
 }
 
 trait WorldsImpl extends Worlds {
@@ -198,6 +224,8 @@ trait WorldsImpl extends Worlds {
   case class World(data: List[List[Item]]) extends WorldApi {
 
     def apply(p: Point) = if (data.isDefinedAt(p.x) && data(p.x).isDefinedAt(p.y)) data(p.x)(p.y) else Wall
+
+    def update(point: Point, item: Item) = ???
 
     def h = data.length
 
@@ -207,7 +235,9 @@ trait WorldsImpl extends Worlds {
 
     def ls = ???
 
-    def update(point: Point, item: Item) = ???
+    def evolve = {
+      ???
+    }
   }
 
   def mkWorld(data: String) = World(data.split("\n").map(_.map(c => Item.unapply(c).get).toArray.toList).toList)
