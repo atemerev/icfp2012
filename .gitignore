@@ -4,5 +4,3 @@ lib_managed/
 src_managed/
 out/
 project/boot/
-scala/.idea/workspace.xml
-
