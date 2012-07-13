@@ -127,28 +127,30 @@ trait Worlds {
     def update(point: Point, item: Item): World
     def h: Int
     def w: Int
-    def lambdas: Int
+    def remainingLambdas: Int
     def robot: Point
     def water: Int
     def flooding: Int
     def waterproof: Int
+    def isUnderwater: Boolean = water >= robot.y
     def evolve: World
   }
 
   def mkWorld(lines: List[String]): World
 
-  sealed abstract class State(w: World, val steps: Int, lambdas: Int) {
-    def score = 25 * lambdas - steps
+  sealed abstract class State(w: World, val steps: Int, collectedLambdas: Int) {
+    def score = 25 * collectedLambdas - steps
     def status: String
     override def toString = "status = " + status + "\n" + w
   }
 
-  case class Game(w: World, override val steps: Int, lambdas: Int) extends State(w, steps, lambdas) {
+  case class Game(w: World, override val steps: Int, collectedLambdas: Int, stepsUnderwater: Int) extends State(w, steps, collectedLambdas) {
+
     def status = "in progress"
     def step(c: Command): State =
       c match {
         case Abort =>
-          Aborted(w, steps + 1, lambdas) // steps + 1 or steps?
+          Aborted(w, steps + 1, collectedLambdas) // steps + 1 or steps?
         case _ =>
           var w = this.w
 
@@ -165,16 +167,20 @@ trait Worlds {
             case _ => // do nothing
           }
 
+          val stepsUnderwater1 = if (this.w.isUnderwater) this.stepsUnderwater + 1 else 0
+          if (stepsUnderwater >= this.w.waterproof) w = w.update(w.robot, Empty)
+
           w = w.evolve
 
-          val nextLs = lambdas + w.lambdas - this.w.lambdas
+          val nextLambdas = collectedLambdas + w.remainingLambdas - this.w.remainingLambdas
           this.w(nextR) match {
             case _ if w.robot == Invalid =>
-              Lost(w, steps + 1, nextLs)
+              Lost(w, steps + 1, nextLambdas)
             case Open =>
-              Won(w, steps + 1, nextLs)
+              Won(w, steps + 1, nextLambdas)
             case _ =>
-              Game(w, steps + 1, nextLs)
+
+              Game(w, steps + 1, nextLambdas, stepsUnderwater1)
           }
       }
     }
@@ -193,11 +199,11 @@ trait Worlds {
     override def score = super.score + 50 * lambdas
   }
 
-  def mkGame(lines: List[String]): Game = Game(mkWorld(lines), 0, 0)
+  def mkGame(lines: List[String]): Game = Game(mkWorld(lines), 0, 0, 0)
 }
 
 trait WorldsImpl extends Worlds {
-  case class World(data: List[List[Item]], metadata: Map[String, String]) extends WorldApi {
+  case class World(data: List[List[Item]], metadata: Map[String, String], age: Int) extends WorldApi {
     def apply(p: Point) = if (data.isDefinedAt(p.x) && data(p.x).isDefinedAt(p.y)) data(p.y)(p.x) else Wall
 
     def update(p: Point, item: Item) =
@@ -207,12 +213,13 @@ trait WorldsImpl extends Worlds {
             case (_, x) if x == p.x && y == p.y => item
             case (item, _) => item
           }
-      }, metadata)
+      }, metadata, age)
 
     def h = data.length
     def w = data(0).length
 
     def water = metadata.getOrElse("Water", "0").toInt
+    def water_=(value: Int): World = World(data, metadata + ("Water" -> value.toString), age)
     def flooding = metadata.getOrElse("Flooding", "0").toInt
     def waterproof = metadata.getOrElse("Waterproof", "10").toInt
 
@@ -221,7 +228,7 @@ trait WorldsImpl extends Worlds {
       Invalid
     }
 
-    def lambdas = data.flatten.count(_ == Lambda)
+    def remainingLambdas = data.flatten.count(_ == Lambda)
 
     private def putRock(p: Point): World = {
       var w = update(p, Rock)
@@ -246,10 +253,11 @@ trait WorldsImpl extends Worlds {
         } else if (this(x,y) == Rock && this(x, y - 1) == Lambda && this(x + 1, y) == Empty && this(x + 1, y - 1) == Empty) {
           w = w.update((x, y), Empty)
           w = w.putRock(x + 1, y - 1)
-        } else if (this(x,y) == Closed && lambdas == 0) {
+        } else if (this(x,y) == Closed && remainingLambdas == 0) {
           w = w.update((x, y), Open)
         }
       }
+      if (flooding != 0 && age != 0 && (age % flooding == 0)) w = w.water_=(water + 1)
       w
     }
 
@@ -266,7 +274,7 @@ trait WorldsImpl extends Worlds {
     val parsed = map map (_ map (c => Item.unapply(c).get) toList) toList
     val width = parsed map (_.length) max
     val padded = parsed map (_.padTo(width, Empty))
-    World(padded.reverse, metadata)
+    World(padded.reverse, metadata, 0)
   }
 }
 
