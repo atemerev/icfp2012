@@ -127,38 +127,39 @@ trait Worlds {
     def update(point: Point, item: Item): World
     def h: Int
     def w: Int
-    def ls: Int
-    def r: Point
+    def lambdas: Int
+    def robot: Point
+    def water: Int
+    def flooding: Int
+    def waterproof: Int
     def evolve: World
   }
 
-  def mkWorld(data: String): World
+  def mkWorld(lines: List[String]): World
 
-  sealed abstract class State(w: World, val steps: Int, ls: Int) {
-    def score = 25 * ls - steps
-
+  sealed abstract class State(w: World, val steps: Int, lambdas: Int) {
+    def score = 25 * lambdas - steps
     def status: String
-
     override def toString = "status = " + status + "\n" + w
   }
 
-  case class Game(w: World, override val steps: Int, ls: Int) extends State(w, steps, ls) {
+  case class Game(w: World, override val steps: Int, lambdas: Int) extends State(w, steps, lambdas) {
     def status = "in progress"
     def step(c: Command): State =
       c match {
         case Abort =>
-          Aborted(w, steps + 1, ls) // steps + 1 or steps?
+          Aborted(w, steps + 1, lambdas) // steps + 1 or steps?
         case _ =>
           var w = this.w
 
-          val nextR = w.r + c.dir
+          val nextR = w.robot + c.dir
           val afterR = nextR + c.dir
           c match {
             case Up | Down | Left | Right if w(nextR).isPassable =>
-              w = w.update(w.r, Empty)
+              w = w.update(w.robot, Empty)
               w = w.update(nextR, Robot)
             case Left | Right if w(nextR) == Rock && w(afterR) == Empty =>
-              w = w.update(w.r, Empty)
+              w = w.update(w.robot, Empty)
               w = w.update(nextR, Robot)
               w = w.update(afterR, Rock)
             case _ => // do nothing
@@ -166,9 +167,9 @@ trait Worlds {
 
           w = w.evolve
 
-          val nextLs = ls + w.ls - this.w.ls
+          val nextLs = lambdas + w.lambdas - this.w.lambdas
           this.w(nextR) match {
-            case _ if w.r == Invalid =>
+            case _ if w.robot == Invalid =>
               Lost(w, steps + 1, nextLs)
             case Open =>
               Won(w, steps + 1, nextLs)
@@ -178,25 +179,25 @@ trait Worlds {
       }
     }
 
-  case class Lost(w: World, override val steps: Int, ls: Int) extends State(w, steps, ls) {
+  case class Lost(w: World, override val steps: Int, lambdas: Int) extends State(w, steps, lambdas) {
     def status = "lost"
   }
 
-  case class Aborted(w: World, override val steps: Int, ls: Int) extends State(w, steps, ls) {
+  case class Aborted(w: World, override val steps: Int, lambdas: Int) extends State(w, steps, lambdas) {
     def status = "aborted"
-    override def score = super.score + 25 * ls
+    override def score = super.score + 25 * lambdas
   }
 
-  case class Won(w: World, override val steps: Int, ls: Int) extends State(w, steps, ls) {
+  case class Won(w: World, override val steps: Int, lambdas: Int) extends State(w, steps, lambdas) {
     def status = "won"
-    override def score = super.score + 50 * ls
+    override def score = super.score + 50 * lambdas
   }
 
-  def mkGame(data: String): Game = Game(mkWorld(data), 0, 0)
+  def mkGame(lines: List[String]): Game = Game(mkWorld(lines), 0, 0)
 }
 
 trait WorldsImpl extends Worlds {
-  case class World(data: List[List[Item]]) extends WorldApi {
+  case class World(data: List[List[Item]], metadata: Map[String, String]) extends WorldApi {
     def apply(p: Point) = if (data.isDefinedAt(p.x) && data(p.x).isDefinedAt(p.y)) data(p.y)(p.x) else Wall
 
     def update(p: Point, item: Item) =
@@ -206,17 +207,21 @@ trait WorldsImpl extends Worlds {
             case (_, x) if x == p.x && y == p.y => item
             case (item, _) => item
           }
-      })
+      }, metadata)
 
     def h = data.length
     def w = data(0).length
 
-    def r: Point = {
+    def water = metadata("Water").toInt
+    def flooding = metadata("Flooding").toInt
+    def waterproof = metadata("Waterproof").toInt
+
+    def robot: Point = {
       for (x <- 0 to w; y <- 0 to h if this(x, y) == Robot) return Point(x, y)
       Invalid
     }
 
-    def ls = data.flatten.count(_ == Lambda)
+    def lambdas = data.flatten.count(_ == Lambda)
 
     private def putRock(p: Point): World = {
       var w = update(p, Rock)
@@ -241,7 +246,7 @@ trait WorldsImpl extends Worlds {
         } else if (this(x,y) == Rock && this(x, y - 1) == Lambda && this(x + 1, y) == Empty && this(x + 1, y - 1) == Empty) {
           w = w.update((x, y), Empty)
           w = w.putRock(x + 1, y - 1)
-        } else if (this(x,y) == Closed && ls == 0) {
+        } else if (this(x,y) == Closed && lambdas == 0) {
           w = w.update((x, y), Open)
         }
       }
@@ -251,11 +256,17 @@ trait WorldsImpl extends Worlds {
     override def toString = data.reverse.map(_.mkString).mkString("\n")
   }
 
-  def mkWorld(data: String) = {
-    val parsed = data.split("\n").map(_.map(c => Item.unapply(c).get).toList).toList
+  def mkWorld(lines: List[String]) = {
+    val map = lines takeWhile (!_.isEmpty)
+    val metadata = lines drop (map.length + 1) map (line => {
+      val Format = """(\w+)\s+(.*)""".r
+      val Format(key, value) = line
+      (key, value)
+    }) toMap
+    val parsed = map map (_ map (c => Item.unapply(c).get) toList) toList
     val width = parsed map (_.length) max
     val padded = parsed map (_.padTo(width, Empty))
-    World(padded.reverse)
+    World(padded.reverse, metadata)
   }
 }
 
@@ -264,8 +275,8 @@ object Validator extends App with Worlds with WorldsImpl {
     println("usage: Validator <map filename> <commands>")
     System.exit(255)
   }
-  val map = scala.io.Source.fromFile(args(0)).getLines().mkString("\n")
-  println(map)
+  val lines = scala.io.Source.fromFile(args(0)).getLines().toList
+  println(lines mkString "\n")
   println()
   val commands = args(1) map (Command.unapply(_).get)
   def exit(g: State): Nothing = {
@@ -273,7 +284,7 @@ object Validator extends App with Worlds with WorldsImpl {
     println(g)
     sys.exit(0)
   }
-  val result = commands.foldLeft(mkGame(map))((g, c) => {
+  val result = commands.foldLeft(mkGame(lines))((g, c) => {
 //    println("Step: %s".format(c))
 //    println(g.w)
 //    println()
