@@ -18,8 +18,7 @@ object BuildSettings {
     ),
     resolvers ++= Seq(
       "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases"
-    ),
-    mainClass := Some("icfp.Interpreter")
+    )
   )
 }
 
@@ -51,6 +50,24 @@ object ProjectBuild extends Build {
   lazy val project = Project(
     id = "icfp2012",
     base = file("."),
-    settings = buildSettings
+    settings = buildSettings ++ Seq(
+      InputKey[Unit]("game") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
+        (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
+          if (args.length != 1) {
+            println("usage: game <file name in data>")
+          } else {
+            val filename = file("../data/" + args(0) + ".txt").absolutePath
+            // fullRunInputTask(run, Compile, "icfp.Interpreter", filename)
+            val logger = ConsoleLogger()
+            Run.executeTrapExit({
+              Run.run("icfp.Interpreter",
+                      classpath map (_.data),
+                      Seq(filename),
+                      logger)(runner)
+            }, logger)
+          }
+        }
+      }
+    )
   )
 }
