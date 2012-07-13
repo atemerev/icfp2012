@@ -251,7 +251,12 @@ trait WorldsImpl extends Worlds {
     override def toString = data.reverse.map(_.mkString).mkString("\n")
   }
 
-  def mkWorld(data: String) = World(data.split("\n").map(_.map(c => Item.unapply(c).get).toArray.toList).toList.reverse)
+  def mkWorld(data: String) = {
+    val parsed = data.split("\n").map(_.map(c => Item.unapply(c).get).toList).toList
+    val width = parsed map (_.length) max
+    val padded = parsed map (_.padTo(width, Empty))
+    World(padded.reverse)
+  }
 }
 
 object Validator extends App with Worlds with WorldsImpl {
