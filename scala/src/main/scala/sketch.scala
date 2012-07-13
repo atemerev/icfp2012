@@ -349,8 +349,24 @@ object Interpreter extends App with Games with Worlds with WorldsImpl {
 trait Genetic1 {
   self: Games with Worlds =>
 
+  val game: Game
+
+  def seed = 42
+  def initialSize = 100
+
   type TaggedSeq = List[(Point, Command)]
-  def gen(seed: Int): List[TaggedSeq]
-  def eval(s: TaggedSeq): Int
+  def eval(s: TaggedSeq): Int = playGame(game, s map (_._2)).score
+  implicit object ord extends Ordering[TaggedSeq] { def compare(s1: TaggedSeq, s2: TaggedSeq) = -(eval(s1).compare(eval(s2))) }
+  import scala.collection.immutable.SortedSet
+  type Population = SortedSet[TaggedSeq]
+  def Population(xs: Traversable[TaggedSeq]) = SortedSet[TaggedSeq](xs.toSeq: _*)
+  def mkPopulation(count: Int): Population = Population(gen(seed) take count toList)
+  def evolve(p: Population): Population = {
+    val allHybrids = for (a <- p; b <- p if (a.map(_._1).toSet intersect b.map(_._1).toSet).nonEmpty) yield crossover(a, b)
+    val hybrids = allHybrids take p.size/5
+    ((p ++ hybrids) take 4*p.size/5) ++ mkPopulation(p.size/5)
+  }
+
+  def gen(seed: Int): Iterator[TaggedSeq]
   def crossover(s1: TaggedSeq, s2: TaggedSeq): TaggedSeq
 }
