@@ -4,11 +4,15 @@ package emulator
 trait Cli {
   self: Commands with Games with Items with Points with States with Worlds =>
 
-  def runNonInteractive(g: State, commands: Commands): Unit = {
+  def runNonInteractive(g: State, commands: Commands) {
     println(g)
     val result = playGame(g, commands)
     println("%d of %d steps: %s".format(result.steps, commands.toList.length, (commands take result.steps).mkString))
     println(result)
+  }
+
+  def runSubmission(g: State) {
+    ???
   }
 
   def runInteractive(g: State): Commands = {
