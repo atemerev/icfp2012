@@ -4,7 +4,7 @@ package strategies
 import collection.SeqView
 
 trait Genetic1 {
-  self: emulator.Commands with emulator.Games with emulator.Items with emulator.Points with emulator.States with emulator.Worlds =>
+  self: emulator.Commands with emulator.Games with emulator.Items with emulator.Points with emulator.States with emulator.Worlds with Pathfinder =>
 
   def genetic1(game: State, trace: Boolean = false): Commands = {
     def initialSize = 70
@@ -18,6 +18,7 @@ trait Genetic1 {
 
     type TaggedSeq = List[(Point, Command)]
     val cache = collection.mutable.Map[TaggedSeq, State]()
+    val scores2 = collection.mutable.Map[TaggedSeq, Int]()
     val mods = collection.mutable.Map[Point, Int]()
     implicit object ord extends Ordering[TaggedSeq] {
       def compare(s1: TaggedSeq, s2: TaggedSeq) =
@@ -25,12 +26,18 @@ trait Genetic1 {
     }
     def eval(s: TaggedSeq): Int = {
       val final_state = cache.getOrElseUpdate(s, playGame(game, s map (_._2)))
-      val unmodded = final_state.score
+      var unmodded = final_state.score
+      val finishAccessible: Boolean = if (final_state.w.liftIsOpen && final_state.w.robot != Invalid) {
+        val distanceToLift = mkDistMap(final_state.w, final_state.w.lift)(final_state.w.robot.x)(final_state.w.robot.y)
+        if (distanceToLift == Int.MaxValue) false
+        else {
+          unmodded += final_state.collectedLambdas*50 - distanceToLift
+          true
+        }
+      } else false
       var mod = final_state.w.remainingLambdaPositions.map(pos => -mods.getOrElse(pos, 0)).sum / 10
-      mod += ((final_state.w.liftIsOpen && final_state.w.robot != Invalid) match {
-        case false => 0
-        case true => 10000 / final_state.w.robot.distanceTo(final_state.w.lift)
-      })
+      mod += (if (finishAccessible) 100000 else 0)
+      scores2 += (s -> unmodded)
       unmodded + mod.toInt
     }
 
@@ -129,7 +136,7 @@ trait Genetic1 {
 
         if (trace) {
           println()
-          println("Iteration " + i + ", best score: real = " + cache(p.head).score + ", modded = " + eval(p.head) + "\n" + playGame(game, p.head.map(_._2)).w.toString)
+          println("Iteration " + i + ", best score: real = " + scores2(p.head) + ", modded = " + eval(p.head) + "\n" + playGame(game, p.head.map(_._2)).w.toString)
           //println(p map (_ map (_._2) mkString) mkString "\n")
         }
       }
