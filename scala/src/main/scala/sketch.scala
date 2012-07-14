@@ -264,10 +264,11 @@ trait WorldsImpl extends Worlds {
     override def toString = data.reverse.map(_.mkString).mkString("\n")
   }
 
+  val Format = """(\w+)\s+(.*)""".r
+
   def mkWorld(lines: List[String]) = {
     val map = lines takeWhile (!_.isEmpty)
     val metadata = lines drop (map.length + 1) map (line => {
-      val Format = """(\w+)\s+(.*)""".r
       val Format(key, value) = line
       (key, value)
     }) toMap
@@ -278,63 +279,65 @@ trait WorldsImpl extends Worlds {
   }
 }
 
-object Validator extends App with Worlds with WorldsImpl {
-  if (args.length != 2) {
-    println("usage: Validator <map filename> <commands>")
-    System.exit(255)
-  }
-  val lines = scala.io.Source.fromFile(args(0)).getLines().toList
-  println(lines mkString "\n")
-  println()
-  val commands = args(1) map (Command.unapply(_).get)
-  def exit(g: State): Nothing = {
-    println("%d of %d steps: %s".format(g.steps, commands.length, (commands take g.steps).mkString))
-    println(g)
-    sys.exit(0)
-  }
-  val result = commands.foldLeft(mkGame(lines))((g, c) => {
-//    println("Step: %s".format(c))
-//    println(g.w)
-//    println()
-    g.step(c) match {
-      case g: Game => g
-      case g: Lost => exit(g)
-      case g: Aborted => exit(g)
-      case g: Won => exit(g)
+trait StuffWeRun extends Worlds with WorldsImpl {
+  def validate(args: Seq[String]) {
+    if (args.length != 2) {
+      println("usage: Validator <map filename> <commands>")
+      System.exit(255)
     }
-  })
-  exit(result)
-}
-
-object Interpreter extends App with Worlds with WorldsImpl {
-  if (args.length != 1) {
-    println("usage: Interpreter <map filename>")
-    System.exit(255)
-  }
-
-  val lines = scala.io.Source.fromFile(args(0)).getLines().toList
-  var game: Game = mkGame(lines)
-  val moves = scala.collection.mutable.ListBuffer[Command]()
-
-  while(true) {
-    render(game)
-    val c = jline.Terminal.getTerminal.readVirtualKey(System.in)
-    val nextCommand = c match {
-      case 'w' => Up
-      case 's' => Down
-      case 'a' => Left
-      case 'd' => Right
-      case ' ' => Abort
-      case _ => Wait
+    val lines = scala.io.Source.fromFile(args(0)).getLines().toList
+    println(lines mkString "\n")
+    println()
+    val commands = args(1) map (Command.unapply(_).get)
+    def exit(g: State): Nothing = {
+      println("%d of %d steps: %s".format(g.steps, commands.length, (commands take g.steps).mkString))
+      println(g)
+      sys.exit(0)
     }
-    val nextState = game.step(nextCommand)
-    moves += nextCommand
-    nextState match {
-      case g: Game => game = g
-      case _ =>
-        render(nextState)
-        println("Moves: " + moves.mkString + "\n")
-        System.exit(0)
+    val result = commands.foldLeft(mkGame(lines))((g, c) => {
+      //    println("Step: %s".format(c))
+      //    println(g.w)
+      //    println()
+      g.step(c) match {
+        case g: Game => g
+        case g: Lost => exit(g)
+        case g: Aborted => exit(g)
+        case g: Won => exit(g)
+      }
+    })
+    exit(result)
+  }
+  
+  def interpret(args: Seq[String]) {
+    if (args.length != 1) {
+      println("usage: Interpreter <map filename>")
+      System.exit(255)
+    }
+
+    val lines = scala.io.Source.fromFile(args(0)).getLines().toList
+    var game: Game = mkGame(lines)
+    val moves = scala.collection.mutable.ListBuffer[Command]()
+
+    while(true) {
+      render(game)
+      val c = jline.Terminal.getTerminal.readVirtualKey(System.in)
+      val nextCommand = c match {
+        case 'w' => Up
+        case 's' => Down
+        case 'a' => Left
+        case 'd' => Right
+        case ' ' => Abort
+        case _ => Wait
+      }
+      val nextState = game.step(nextCommand)
+      moves += nextCommand
+      nextState match {
+        case g: Game => game = g
+        case _ =>
+          render(nextState)
+          println("Moves: " + moves.mkString + "\n")
+          System.exit(0)
+      }
     }
   }
 
@@ -343,5 +346,29 @@ object Interpreter extends App with Worlds with WorldsImpl {
     cr.clearScreen()
     println(state.w)
     println("Score: %d (%s)".format(state.score, state.status))
+  }
+  
+  def tests(args: Seq[String]) {
+    val result = Tests.tests mapValues { _(this) } 
+    println(result)
+    System.exit(result.values.count(!_))
+  }
+}
+
+//object Validator extends App with StuffWeRun {
+//  validate(args)
+//}
+//
+//object Interpreter extends App with StuffWeRun {
+//  interpret(args)
+//}
+
+object Main extends App with StuffWeRun {
+  val cmd = args(0)
+  val stuff = args.tail
+  cmd match {
+    case "v" => validate(stuff)
+    case "i" => interpret(stuff)
+    case "t" => tests(stuff)
   }
 }
