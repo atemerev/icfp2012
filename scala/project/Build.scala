@@ -47,6 +47,24 @@ object ProjectBuild extends Build {
 
   import BuildSettings._
 
+  // private def mkGameTask(name: String, runner: String) =
+  //   InputKey[Unit](name) <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
+  //     (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
+  //       if (args.length != 1) {
+  //         println("usage: " + name + " <file name in data>")
+  //       } else {
+  //         val filename = file("../data/" + args(0) + ".txt").absolutePath
+  //         val logger = ConsoleLogger()
+  //         Run.executeTrapExit({
+  //           Run.run(runner,
+  //                   classpath map (_.data),
+  //                   Seq(filename),
+  //                   logger)(runner)
+  //         }, logger)
+  //       }
+  //     }
+  //   }
+
   lazy val project = Project(
     id = "icfp2012",
     base = file("."),
@@ -61,6 +79,23 @@ object ProjectBuild extends Build {
             val logger = ConsoleLogger()
             Run.executeTrapExit({
               Run.run("icfp.Interpreter",
+                      classpath map (_.data),
+                      Seq(filename),
+                      logger)(runner)
+            }, logger)
+          }
+        }
+      },
+      InputKey[Unit]("gen1") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
+        (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
+          if (args.length != 1) {
+            println("usage: gen1 <file name in data>")
+          } else {
+            val filename = file("../data/" + args(0) + ".txt").absolutePath
+            // fullRunInputTask(run, Compile, "icfp.Interpreter", filename)
+            val logger = ConsoleLogger()
+            Run.executeTrapExit({
+              Run.run("icfp.Genetic1App",
                       classpath map (_.data),
                       Seq(filename),
                       logger)(runner)
