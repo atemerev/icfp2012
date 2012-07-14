@@ -4,7 +4,7 @@ import icfp.Prelude._
 
 trait Worlds {
   type World <: WorldApi
-
+  // curious, so we count from 0? how about water? Have to check it
   trait WorldApi {
     def apply(point: Point): Item
     def update(point: Point, item: Item): World
@@ -24,7 +24,14 @@ trait Worlds {
 
 trait WorldsImpl extends Worlds {
   case class World(data: List[List[Item]], metadata: Map[String, String], age: Int) extends WorldApi {
-    def apply(p: Point) = if (data.isDefinedAt(p.x) && data(p.x).isDefinedAt(p.y)) data(p.y)(p.x) else Wall
+    def apply(p: Point) = try {
+      if (data.isDefinedAt(p.y) &&
+          data(p.y).isDefinedAt(p.x))
+      {
+        data(p.y)(p.x)
+      } else Wall
+    } catch {case e: Exception => throw new IllegalArgumentException("fuck!@" + p + " in\n" + this, e)
+    }
 
     def update(p: Point, item: Item) =
       World(data.zipWithIndex map {
@@ -35,20 +42,20 @@ trait WorldsImpl extends Worlds {
           }
       }, metadata, age)
 
-    def h = data.length
-    def w = data(0).length
+      def h = data.length
+      def w = data(0).length
 
-    def water = metadata.getOrElse("Water", "0").toInt
-    def water_=(value: Int): World = World(data, metadata + ("Water" -> value.toString), age)
-    def flooding = metadata.getOrElse("Flooding", "0").toInt
-    def waterproof = metadata.getOrElse("Waterproof", "10").toInt
+      def water = metadata.getOrElse("Water", "0").toInt
+      def water_=(value: Int): World = World(data, metadata + ("Water" -> value.toString), age)
+      def flooding = metadata.getOrElse("Flooding", "0").toInt
+      def waterproof = metadata.getOrElse("Waterproof", "10").toInt
 
-    def robot: Point = {
-      for (x <- 0 to w; y <- 0 to h if this(x, y) == Robot) return Point(x, y)
-      Invalid
-    }
+      def robot: Point = {
+        for (x <- 0 to w; y <- 0 to h if this(x, y) == Robot) return Point(x, y)
+        Invalid
+      }
 
-    def remainingLambdas = data.flatten.count(_ == Lambda)
+      def remainingLambdas = data.flatten.count(_ == Lambda)
 
     private def putRock(p: Point): World = {
       var w = update(p, Rock)
