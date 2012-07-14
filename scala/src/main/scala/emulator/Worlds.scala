@@ -1,10 +1,14 @@
 package icfp
-
-import icfp.Prelude._
+package emulator
 
 trait Worlds {
+  self: Emulator =>
+
   type World <: WorldApi
-  // curious, so we count from 0? how about water? Have to check it
+
+  // (vp) curious, so we count from 0? how about water? Have to check it
+  // (xb) VERY IMPORTANT!! need to get to it later
+
   trait WorldApi {
     def apply(point: Point): Item
     def moveTo(point: Point): World = update(point, Robot)
@@ -13,22 +17,23 @@ trait Worlds {
     def w: Int
     def remainingLambdas: Int
     def robot: Point
+    def lift: Point
     def water: Int
     def flooding: Int
     def waterproof: Int
-    def isUnderwater: Boolean = water >= robot.y
-    def whereLift: Point
+    def heightOverWater = robot.y - water
+    def isUnderwater: Boolean = heightOverWater < 0
+    def timeToNextFlood: Int
     def lambdaClosestToLift: Point
     def evolve: World
   }
 
-  def mkWorld(lines: List[String]): World
+  def mkWorld(lines: List[String], age: Int = 0): World
 }
 
+trait DumbWorlds {
+  self: Emulator =>
 
-
-// (vp) I believe we'll gain a lot if we switch from a list of lists of items to a linear byte array. flyweight pattern.
-trait WorldsImpl extends Worlds {
   case class World(data: List[List[Item]], metadata: Map[String, String], age: Int) extends WorldApi {
     def apply(p: Point) = try {
       if (data.isDefinedAt(p.y) &&
@@ -39,13 +44,14 @@ trait WorldsImpl extends Worlds {
     } catch {case e: Exception => throw new IllegalArgumentException("fuck!@" + p + " in\n" + this, e)
     }
 
+    // (xb to vp): never used?
     override def moveTo(point: Point): World = {
       val newWorld = update(point, Robot)
       newWorld.robotAt = point
       newWorld.liftAt = liftAt
       newWorld
     }
-    
+
     def update(p: Point, item: Item) =
       World(data.zipWithIndex map {
         case (line, y) =>
@@ -62,6 +68,7 @@ trait WorldsImpl extends Worlds {
     def water_=(value: Int): World = World(data, metadata + ("Water" -> value.toString), age)
     def flooding = metadata.getOrElse("Flooding", "0").toInt
     def waterproof = metadata.getOrElse("Waterproof", "10").toInt
+    def timeToNextFlood = if (flooding == 0) Int.MaxValue else (flooding - age % flooding)
 
     def isA(item: Item)(p: (Int, Int)) = this(p) == item
     def oneOf(items: Item*)(p: (Int, Int)) = items exists (this(p)==_)
@@ -71,12 +78,12 @@ trait WorldsImpl extends Worlds {
 
     // make sense to pass it between generations, together with meta, in an additional props structure
     private var liftAt: Point = Invalid
-    def whereLift = {
+    def lift = {
       if (liftAt == Invalid) for (p <- points find(oneOf(Open, Closed))) liftAt = p
       liftAt
     }
 
-    def distanceToLift(p: Point) = p.distanceTo(whereLift)
+    def distanceToLift(p: Point) = p.distanceTo(lift)
 
     def lambdaClosestToLift = tupleToPoint((lambdas map (p => (distanceToLift(p), p)) min)._2)
 
@@ -123,15 +130,14 @@ trait WorldsImpl extends Worlds {
     override def toString = data.reverse.map(_.mkString).mkString("\n")
   }
 
-  val Format = """(\w+)\s+(.*)""".r
-
-  def mkWorld(lines: List[String]) = {
-    val map = lines takeWhile (!_.isEmpty)
-    val metadata = lines drop (map.length + 1) map (line => {
+  def mkWorld(lines: List[String], age: Int = 0) = { // (xb to vp) why explicit age?
+    val mine: List[String] = lines takeWhile (!_.isEmpty)
+    val metadata: Map[String, String] = lines drop (mine.length + 1) map (line => {
+      val Format = """(\w+)\s+(.*)""".r
       val Format(key, value) = line
       (key, value)
     }) toMap
-    val parsed = map map (_ map (c => Item.unapply(c).get) toList) toList
+    val parsed = mine map (_ map (c => Item.unapply(c).get) toList) toList
     val width = parsed map (_.length) max
     val padded = parsed map (_.padTo(width, Empty))
     World(padded.reverse, metadata, 0)

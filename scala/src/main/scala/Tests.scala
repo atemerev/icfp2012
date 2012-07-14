@@ -1,29 +1,30 @@
 package icfp
 
-import icfp.Prelude.Point
-
-case class Tests(w: StuffWeRun) {
+// (xb to vp) replacing an injected SUT with a singleton is bad
+// but I cannot immediately see the consequences in this particular case
+object Tests {
+  import Main._
 
   def fmt(x: Any) = if (x.toString contains "\n") ("\n" + x + "\n") else (" <" + x + ">")
-  def run = tests mapValues { 
+  def run = tests mapValues {
     test =>
     try {
       val p = test()
       if (p._1 == p._2) "ok" else "expected" + fmt(p._1) + ", actual" + fmt(p._2)
     } catch {
       case e:Exception => e.getMessage
-    } 
-  } 
+    }
+  }
 
   def lines(source: String) = (source split "\n" tail) toList
-  val smallWorld = w.mkWorld(lines(
+  val smallWorld = mkWorld(lines(
     """
 #* *#
 #* *#
 #####"""
   ))
 
-  val crossWorld = w.mkWorld(lines(
+  val crossWorld = mkWorld(lines(
 """
         #L#######
         #*** \\ #
@@ -44,10 +45,28 @@ case class Tests(w: StuffWeRun) {
 ##########################"""
   ))
 
+val deepWell = """
+#R  #
+#   #
+#   #
+#   #
+#   #
+#   #
+#   #
+###L#"""
+
+  val dryWell = mkWorld(lines(deepWell))
+  val slowFillingWell = mkWorld(lines(deepWell + "\n\nFlooding 5\nWaterproof 3"))
+  val fastFillingWell = mkWorld(lines(deepWell + "\n\nFlooding 2\nWaterproof 3"))
+
+  def newState(world: World) = new InProgress(world, 0, 0, 0){
+    override def status: String = "I'm okay so far; you?"
+  }
+
   val tests:Map[String, ()=>(Any, Any)] = Map(
     "varying width" -> (() => {
-      val game = w.mkGame(crossWorld)
-      (26, game.w.w)
+      val game = mkGame(crossWorld)
+      (26, game.w)
     }),
   "wall at 0,0" -> (() => { (Wall, smallWorld((0, 0))) }),
   "wall at 4,4" -> (() => { (Wall, smallWorld((4, 4))) }),
@@ -56,13 +75,13 @@ case class Tests(w: StuffWeRun) {
   "Void at 2,1" -> (() => { (Empty,smallWorld((2, 1))) }),
 
   "rocks fall" -> (() => {
-    val world = w.mkWorld(lines(
+    val world = mkWorld(lines(
       """
 #* #
 #* #
 ####"""
     ))
-    val expected = w.mkWorld(lines(
+    val expected = mkWorld(lines(
       """
 #  #
 #**#
@@ -72,7 +91,7 @@ case class Tests(w: StuffWeRun) {
   }),
 
   "rocks merge" -> (() => {
-    val expected = w.mkWorld(lines(
+    val expected = mkWorld(lines(
       """
 #   #
 #***#
@@ -81,10 +100,36 @@ case class Tests(w: StuffWeRun) {
     (expected, smallWorld.evolve)
   }),
   "find lift" -> (() => {
-    (Point(9,16), crossWorld.whereLift)
+    (Point(9,16), crossWorld.lift)
   }),
-    "lambda closest to lift" -> (() => {
-      (Point(9,14), crossWorld.lambdaClosestToLift)
-    })
+  "lambda closest to lift" -> (() => {
+    (Point(9,14), crossWorld.lambdaClosestToLift)
+  }),
+  "no flooding in a dry well" -> (() => {
+    (0, dryWell.flooding)
+  }),
+  "have flooding in a wet well" -> (() => {
+    (5, slowFillingWell.flooding)
+  }),
+  "time to next flooding is good" -> (() => {
+    val world = mkWorld(lines(deepWell + "\n\nFlooding 5\nWaterproof 3"), 8)
+    (2, world.timeToNextFlood)
+  }),
+  "ttl under water in a dry well" -> (() => {
+    val state = newState(dryWell)
+    (Int.MaxValue, state.timeToLiveUnderWater)
+  }),
+  "ttl under water in a wet well" -> (() => {
+    (3, newState(slowFillingWell).timeToLiveUnderWater)
+  }),
+  "able to get to lift in a dry well" -> (() => {
+    (true, newState(dryWell).mayGetToLift)
+  }),
+  "able to get to lift in a slow-filling well" -> (() => {
+    (true, newState(slowFillingWell).mayGetToLift)
+  }),
+  "unable to get to lift in a fast-filling well" -> (() => {
+    (false, newState(fastFillingWell).mayGetToLift)
+  })
   )
 }

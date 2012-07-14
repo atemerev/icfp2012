@@ -47,6 +47,9 @@ object ProjectBuild extends Build {
 
   import BuildSettings._
 
+  // (xb) cant make this compile
+  // couldn't care less about sbt, so I just copy paste
+
   // private def mkGameTask(name: String, runner: String) =
   //   InputKey[Unit](name) <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
   //     (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
@@ -78,9 +81,9 @@ object ProjectBuild extends Build {
             // fullRunInputTask(run, Compile, "icfp.Interpreter", filename)
             val logger = ConsoleLogger()
             Run.executeTrapExit({
-              Run.run("icfp.Interpreter",
+              Run.run("icfp.Main",
                       classpath map (_.data),
-                      Seq(filename),
+                      Seq("i", filename),
                       logger)(runner)
             }, logger)
           }
@@ -95,9 +98,9 @@ object ProjectBuild extends Build {
             // fullRunInputTask(run, Compile, "icfp.Interpreter", filename)
             val logger = ConsoleLogger()
             Run.executeTrapExit({
-              Run.run("icfp.Genetic1",
+              Run.run("icfp.Main",
                       classpath map (_.data),
-                      Seq(filename),
+                      Seq("gen1", filename),
                       logger)(runner)
             }, logger)
           }
