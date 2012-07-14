@@ -14,9 +14,9 @@ trait Pathfinder {
       for (x <- 0 until w.h; y <- 0 until w.w if w(x, y) == Empty || w(x, y) == Earth || w(x, y) == Lambda || w(x, y) == Robot) {
         var v = p(x)(y) - 1
         if (x > 0) v = math.min(v, p(x - 1)(y))
-        if (y > 0) v = math.min(v, p(x)(y - 1))
+        if (y > 0 && (y + 2 == w.h || w(x, y + 1) != Rock)) v = math.min(v, p(x)(y - 1))
         if (x < w.w - 1) v = math.min(v, p(x + 1)(y))
-        if (y < w.h - 1 && p(x)(y + 1) + 1 < p(x)(y) && w(x, y) != Rock) v = math.min(v, p(x)(y + 1))
+        if (y < w.h - 1) v = math.min(v, p(x)(y + 1))
         p(x)(y) = v + 1
       }
     }
