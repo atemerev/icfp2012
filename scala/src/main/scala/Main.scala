@@ -35,5 +35,29 @@ object Main extends App with DumbEmulator with Strategies with emulator.Cli {
       val trace = stuff.length == 1
       val commands = genetic1(game, trace)
       println(commands.mkString)
+    case "p" =>
+      val game = mkGame(mkWorld(
+        """
+        #L#######
+        #... \\ #
+        #\\\ .. #
+#########.##    ##########
+#.......\ ..........*   .#
+#*******\......#....#\\ .#
+###\.\\\...**..#....... *#
+#*****\\  .\\..##     #\.#
+######### ....  ##########
+        #       #
+        #### ####
+        #.......#
+#########  \\\\*##########
+#*\\  **#     *..*\ \\\\\#
+#.\**\*** .....**.# \\##\#
+#\R......     .\\.. \\\\\#
+##########################""".split("\n").toList))
+
+      val start = game.w.robot
+      val end = game.w.lift
+      println(findPath(start, mkDistMap(game.w, end)).mkString)
   }
 }
