@@ -87,6 +87,11 @@ trait Genetic1 {
       }
     }
 
+    // for ((seq, score) <- cache) {
+    //   if (score != playGame(game, seq map (_._2)).score)
+    //     throw new Exception("cache is rotten")
+    // }
+
     val chosenOne = p.head
     val commands = chosenOne map (_._2)
     if (trace) {
