@@ -132,8 +132,8 @@ trait DumbWorlds {
 
   def mkWorld(lines: List[String], age: Int = 0) = { // (xb to vp) why explicit age?
     val mine: List[String] = lines takeWhile (!_.isEmpty)
-    val metadata: Map[String, String] = lines drop (mine.length + 1) map (line => {
-      val Format = """(\w+)\s+(.*)""".r
+    val metadata: Map[String, String] = lines drop (mine.length + 1) takeWhile (!_.isEmpty) map (line => {
+      val Format = """^(\w+)\s+(.+?)\s*$""".r
       val Format(key, value) = line
       (key, value)
     }) toMap
