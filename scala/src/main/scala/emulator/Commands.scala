@@ -2,7 +2,7 @@ package icfp
 package emulator
 
 trait Commands {
-  self: Emulator =>
+  self: Commands with Games with Items with Points with States with Worlds =>
 
   sealed trait Command {
     def dir: Point

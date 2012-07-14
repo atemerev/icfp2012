@@ -2,7 +2,7 @@ package icfp
 package emulator
 
 trait Cli {
-  self: Emulator =>
+  self: Commands with Games with Items with Points with States with Worlds =>
 
   def runNonInteractive(g: State, commands: Commands): Unit = {
     println(g)

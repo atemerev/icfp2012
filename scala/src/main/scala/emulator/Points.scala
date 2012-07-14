@@ -2,7 +2,7 @@ package icfp
 package emulator
 
 trait Points {
-  self: Emulator =>
+  self: Commands with Games with Items with Points with States with Worlds =>
 
   case class Point(x: Int, y: Int) {
     def +(p: Point) = Point(x + p.x, y + p.y)

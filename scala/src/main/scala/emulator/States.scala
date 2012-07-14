@@ -5,7 +5,7 @@ package emulator
 // because now it's inside emulator, so it won't potentially interfere with Strategies
 // fair enough?
 trait States {
-  self: Emulator =>
+  self: Commands with Games with Items with Points with States with Worlds =>
 
   sealed trait State {
     def w: World

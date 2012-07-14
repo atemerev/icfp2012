@@ -2,7 +2,7 @@ package icfp
 package strategies
 
 trait Genetic1 {
-  self: Emulator =>
+  self: emulator.Commands with emulator.Games with emulator.Items with emulator.Points with emulator.States with emulator.Worlds =>
 
   def genetic1(game: State): Commands = {
     def initialSize = 100

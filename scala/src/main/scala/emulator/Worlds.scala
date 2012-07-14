@@ -2,7 +2,7 @@ package icfp
 package emulator
 
 trait Worlds {
-  self: Emulator =>
+  self: Commands with Games with Items with Points with States with Worlds =>
 
   type World <: WorldApi
 
@@ -32,7 +32,7 @@ trait Worlds {
 }
 
 trait DumbWorlds {
-  self: Emulator =>
+  self: Commands with Games with Items with Points with States with Worlds =>
 
   case class World(data: List[List[Item]], metadata: Map[String, String], age: Int) extends WorldApi {
     def apply(p: Point) = try {

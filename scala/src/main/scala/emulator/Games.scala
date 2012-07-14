@@ -2,7 +2,7 @@ package icfp
 package emulator
 
 trait Games {
-  self: Emulator =>
+  self: Commands with Games with Items with Points with States with Worlds =>
 
   def mkGame(world: World): InProgress = InProgress(world, 0, 0, 0)
 
