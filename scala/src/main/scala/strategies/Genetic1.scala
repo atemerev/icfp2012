@@ -83,8 +83,16 @@ trait Genetic1 {
     }
 
     def evolve(p: Population): Population = {
-      val allHybrids = for (a <- p.view; b <- p.view if (a.map(_._1).toSet intersect b.map(_._1).toSet).nonEmpty
-        && (rng.nextInt(100) < 5)) yield crossover(a, b)
+      val allHybrids = for (a <- p.view; b <- p.view) yield {
+        def qq(x: TaggedSeq): Int = cache(x).w.robot match {
+          case Invalid => -1000
+          case _ => cache(x).w.robot.distanceTo(cache(x).w.lift)
+        }
+        // val factor = if (cache(a).w.liftIsOpen || cache(b).w.liftIsOpen) 300/(qq(a) + qq(b)) else 5
+        val factor = 10
+        val authorizeMarriage = (a.map(_._1).toSet intersect b.map(_._1).toSet).nonEmpty && rng.nextInt(100) < factor
+        if (authorizeMarriage) crossover(a, b) else List()
+      }
       (Population(p ++ allHybrids.flatten) take (p.size - ncrossover)) ++ mkPopulation(ncrossover)
     }
 
@@ -108,19 +116,22 @@ trait Genetic1 {
       //println(p map (_ map (_._2) mkString) mkString "\n")
     }
     for (i <- 0 to iterations) {
-      p = evolve(p)
+      val won = cache.get(p.head).map(_.isInstanceOf[Won]).getOrElse(false)
+      if (!won) {
+        p = evolve(p)
 
-      mods.clear()
-      p foreach (seq => cache(seq).w.remainingLambdaPositions foreach (pos => {
-        val prev = mods.getOrElse(pos, 0)
-        mods(pos) = prev + cache(seq).score
-      }))
-      println(mods)
+        mods.clear()
+        p foreach (seq => cache(seq).w.remainingLambdaPositions foreach (pos => {
+          val prev = mods.getOrElse(pos, 0)
+          mods(pos) = prev + cache(seq).score
+        }))
+        println(mods)
 
-      if (trace) {
-        println()
-        println("Iteration " + i + ", best score: real = " + cache(p.head).score + ", modded = " + eval(p.head) + "\n" + playGame(game, p.head.map(_._2)).w.toString)
-        //println(p map (_ map (_._2) mkString) mkString "\n")
+        if (trace) {
+          println()
+          println("Iteration " + i + ", best score: real = " + cache(p.head).score + ", modded = " + eval(p.head) + "\n" + playGame(game, p.head.map(_._2)).w.toString)
+          //println(p map (_ map (_._2) mkString) mkString "\n")
+        }
       }
     }
 
@@ -133,7 +144,7 @@ trait Genetic1 {
     val commands = chosenOne map (_._2)
     if (trace) {
       println(commands mkString)
-      println(eval(chosenOne))
+      println(cache(chosenOne).score)
     }
     commands
   }
