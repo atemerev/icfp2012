@@ -82,8 +82,8 @@ trait Genetic1 {
 
     val chosenOne = p.head
     val commands = chosenOne map (_._2)
-    println(commands mkString)
-    println(eval(chosenOne))
+    // println(commands mkString)
+    // println(eval(chosenOne))
     commands
   }
 }
