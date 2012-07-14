@@ -17,13 +17,21 @@ trait Genetic1 {
     def pickRandom[T](xs: T*): T = xs.toSeq(rng.nextInt(xs.toSeq.length))
 
     type TaggedSeq = List[(Point, Command)]
-    val crossCache = collection.mutable.Set[(TaggedSeq, TaggedSeq)]()
-    val cache = collection.mutable.Map[TaggedSeq, Int]()
-    def eval(s: TaggedSeq): Int = cache.getOrElseUpdate(s, playGame(game, s map (_._2)).score)
-
+    val cache = collection.mutable.Map[TaggedSeq, State]()
+    val mods = collection.mutable.Map[Point, Int]()
     implicit object ord extends Ordering[TaggedSeq] {
       def compare(s1: TaggedSeq, s2: TaggedSeq) =
         if (s1 == s2) 0 else if (eval(s2) - eval(s1) > 0) 1 else -1
+    }
+    def eval(s: TaggedSeq): Int = {
+      val final_state = cache.getOrElseUpdate(s, playGame(game, s map (_._2)))
+      val unmodded = final_state.score
+      var mod = final_state.w.remainingLambdaPositions.map(pos => -mods.getOrElse(pos, 0)).sum / 10
+      mod += ((final_state.w.liftIsOpen && final_state.w.robot != Invalid) match {
+        case false => 0
+        case true => 10000 / final_state.w.robot.distanceTo(final_state.w.lift)
+      })
+      unmodded + mod.toInt
     }
 
     import scala.collection.immutable.SortedSet
@@ -67,7 +75,7 @@ trait Genetic1 {
         }
         if (history(result)) genOne else {
           history += result
-          cache(result) = (g match { case ip: InProgress => ip.step(Abort); case _ => g }).score
+          cache(result) = g match { case ip: InProgress => ip.step(Abort); case _ => g }
           result
         }
       }
@@ -101,15 +109,23 @@ trait Genetic1 {
     }
     for (i <- 0 to iterations) {
       p = evolve(p)
+
+      mods.clear()
+      p foreach (seq => cache(seq).w.remainingLambdaPositions foreach (pos => {
+        val prev = mods.getOrElse(pos, 0)
+        mods(pos) = prev + cache(seq).score
+      }))
+      println(mods)
+
       if (trace) {
         println()
-        println("Iteration " + i + ", best score " + eval(p.head) + "\n" + playGame(game, p.head.map(_._2)).w.toString)
+        println("Iteration " + i + ", best score: real = " + cache(p.head).score + ", modded = " + eval(p.head) + "\n" + playGame(game, p.head.map(_._2)).w.toString)
         //println(p map (_ map (_._2) mkString) mkString "\n")
       }
     }
 
-    // for ((seq, score) <- cache) {
-    //   if (score != playGame(game, seq map (_._2)).score)
+    // for ((seq, state) <- cache) {
+    //   if (state.score != playGame(game, seq map (_._2)).score)
     //     throw new Exception("cache is rotten")
     // }
 

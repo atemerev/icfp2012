@@ -16,8 +16,10 @@ trait Worlds {
     def h: Int
     def w: Int
     def remainingLambdas: Int
+    def remainingLambdaPositions: List[Point]
     def robot: Point
     def lift: Point
+    def liftIsOpen: Boolean
     def water: Int
     def flooding: Int
     def waterproof: Int
@@ -83,6 +85,10 @@ trait DumbWorlds {
       liftAt
     }
 
+    def liftIsOpen = {
+      apply(lift) == Open
+    }
+
     def distanceToLift(p: Point) = p.distanceTo(lift)
 
     def lambdaClosestToLift = tupleToPoint((lambdas map (p => (distanceToLift(p), p)) min)._2)
@@ -95,6 +101,8 @@ trait DumbWorlds {
     }
 
     def remainingLambdas = lambdas size
+
+    def remainingLambdaPositions = lambdas map { case (x, y) => Point(x, y) } toList
 
     private def putRock(p: Point): World = {
       var w = update(p, Rock)
