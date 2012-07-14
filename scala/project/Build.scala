@@ -46,6 +46,8 @@ object ShellPrompt {
 object ProjectBuild extends Build {
 
   import BuildSettings._
+  import sbtassembly.Plugin._
+  import AssemblyKeys._
 
   // (xb) cant make this compile
   // couldn't care less about sbt, so I just copy paste
@@ -68,10 +70,14 @@ object ProjectBuild extends Build {
   //     }
   //   }
 
+  excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
+    cp filter {_.data.getName == "junit-3.8.1.jar"}
+  }
+
   lazy val project = Project(
     id = "icfp2012",
     base = file("."),
-    settings = buildSettings ++ Seq(
+    settings = buildSettings ++ assemblySettings ++ Seq(
       InputKey[Unit]("game") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
         (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
           if (args.length != 1) {
