@@ -80,6 +80,11 @@ trait Genetic1 {
       // println(p map (_ map (_._2) mkString) mkString "\n")
     }
 
+    // for ((seq, score) <- cache) {
+    //   if (score != playGame(game, seq map (_._2)).score)
+    //     throw new Exception("cache is rotten")
+    // }
+
     val chosenOne = p.head
     val commands = chosenOne map (_._2)
     // println(commands mkString)
