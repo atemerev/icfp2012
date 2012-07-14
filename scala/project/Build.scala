@@ -78,7 +78,6 @@ object ProjectBuild extends Build {
             println("usage: game <file name in data>")
           } else {
             val filename = file("../data/" + args(0) + ".txt").absolutePath
-            // fullRunInputTask(run, Compile, "icfp.Interpreter", filename)
             val logger = ConsoleLogger()
             Run.executeTrapExit({
               Run.run("icfp.Main",
@@ -95,12 +94,26 @@ object ProjectBuild extends Build {
             println("usage: gen1 <file name in data>")
           } else {
             val filename = file("../data/" + args(0) + ".txt").absolutePath
-            // fullRunInputTask(run, Compile, "icfp.Interpreter", filename)
             val logger = ConsoleLogger()
             Run.executeTrapExit({
               Run.run("icfp.Main",
                       classpath map (_.data),
                       Seq("gen1", filename),
+                      logger)(runner)
+            }, logger)
+          }
+        }
+      },
+      InputKey[Unit]("our-test") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
+        (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
+          if (args.length != 0) {
+            println("usage: our-test")
+          } else {
+            val logger = ConsoleLogger()
+            Run.executeTrapExit({
+              Run.run("icfp.Main",
+                      classpath map (_.data),
+                      Seq("t"),
                       logger)(runner)
             }, logger)
           }
