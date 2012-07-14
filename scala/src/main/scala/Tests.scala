@@ -44,8 +44,6 @@ case class Tests(w: StuffWeRun) {
 ##########################"""
   ))
 
-//  type Test = (=>(String, String))
-
   val tests:Map[String, ()=>(Any, Any)] = Map(
     "varying width" -> (() => {
       val game = w.mkGame(crossWorld)
@@ -85,8 +83,8 @@ case class Tests(w: StuffWeRun) {
   "find lift" -> (() => {
     (Point(9,16), crossWorld.whereLift)
   }),
-    "lambda closest lift" -> (() => {
-      ((9,14), crossWorld.lambdaClosestToLift)
+    "lambda closest to lift" -> (() => {
+      (Point(9,14), crossWorld.lambdaClosestToLift)
     })
   )
 }

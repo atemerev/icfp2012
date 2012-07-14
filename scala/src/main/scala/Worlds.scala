@@ -17,11 +17,15 @@ trait Worlds {
     def flooding: Int
     def waterproof: Int
     def isUnderwater: Boolean = water >= robot.y
+    def whereLift: Point
+    def lambdaClosestToLift: Point
     def evolve: World
   }
 
   def mkWorld(lines: List[String]): World
 }
+
+
 
 // (vp) I believe we'll gain a lot if we switch from a list of lists of items to a linear byte array. flyweight pattern.
 trait WorldsImpl extends Worlds {
@@ -51,40 +55,39 @@ trait WorldsImpl extends Worlds {
           }
       }, metadata, age)
 
-      def h = data.length
-      def w = data(0).length
+    def h = data.length
+    def w = data(0).length
 
-      def water = metadata.getOrElse("Water", "0").toInt
-      def water_=(value: Int): World = World(data, metadata + ("Water" -> value.toString), age)
-      def flooding = metadata.getOrElse("Flooding", "0").toInt
-      def waterproof = metadata.getOrElse("Waterproof", "10").toInt
+    def water = metadata.getOrElse("Water", "0").toInt
+    def water_=(value: Int): World = World(data, metadata + ("Water" -> value.toString), age)
+    def flooding = metadata.getOrElse("Flooding", "0").toInt
+    def waterproof = metadata.getOrElse("Waterproof", "10").toInt
 
-      def isA(item: Item)(p: (Int, Int)) = this(p) == item
-      def oneOf(items: Item*)(p: (Int, Int)) = items exists (this(p)==_)
-      def points = for (x <- 0 to w; y <- 0 to h) yield (x, y)
-      def lambdas = points filter (isA(Lambda))
-    
-      def find(what: Item): Option[(Int, Int)] = points find (isA(what))
+    def isA(item: Item)(p: (Int, Int)) = this(p) == item
+    def oneOf(items: Item*)(p: (Int, Int)) = items exists (this(p)==_)
+    def points = for (x <- 0 to w; y <- 0 to h) yield (x, y)
+    def lambdas = points filter (isA(Lambda))
+    def find(what: Item): Option[(Int, Int)] = points find (isA(what))
 
-      // make sense to pass it between generations, together with meta, in an additional props structure
-      private var liftAt: Point = Invalid
-      def whereLift = {
-        if (liftAt == Invalid) for (p <- points find(oneOf(Open, Closed))) liftAt = p
-        liftAt
-      }
+    // make sense to pass it between generations, together with meta, in an additional props structure
+    private var liftAt: Point = Invalid
+    def whereLift = {
+      if (liftAt == Invalid) for (p <- points find(oneOf(Open, Closed))) liftAt = p
+      liftAt
+    }
 
-      def distanceToLift(p: Point) = p.distanceTo(whereLift)
+    def distanceToLift(p: Point) = p.distanceTo(whereLift)
 
-      def lambdaClosestToLift = (lambdas map (p => (distanceToLift(p), p)) min)._2
-    
-      private var robotAt: Point = Invalid
+    def lambdaClosestToLift = tupleToPoint((lambdas map (p => (distanceToLift(p), p)) min)._2)
 
-      def robot: Point = {
-        if (robotAt == Invalid) for (p <- find(Robot)) robotAt = p
-        robotAt
-      }
+    private var robotAt: Point = Invalid
 
-      def remainingLambdas = data.flatten.count(_ == Lambda)
+    def robot: Point = {
+      if (robotAt == Invalid) for (p <- find(Robot)) robotAt = p
+      robotAt
+    }
+
+    def remainingLambdas = lambdas size
 
     private def putRock(p: Point): World = {
       var w = update(p, Rock)
