@@ -37,10 +37,10 @@ trait Genetic1 {
             if (failed) nextMove else { curPos = curPos + wannabe.dir; (curPos, wannabe) }
           }
         }
-        val seq = Stream.empty.map((_: Nothing) => nextMove).takeWhile(x => x._2 != Abort)
-        seq.toList :+ (Invalid, Abort)
+        val seq = Stream.continually(nextMove).takeWhile(x => x._2 != Abort).toList
+        seq :+ (Invalid, Abort)
       }
-      Stream.empty.map((_: Nothing) => genOne).iterator
+      Stream.continually(genOne).iterator
     }
 
     def evolve(p: Population): Population = {
