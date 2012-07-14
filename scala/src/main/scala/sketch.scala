@@ -137,6 +137,10 @@ trait Worlds {
   }
 
   def mkWorld(lines: List[String]): World
+}
+
+trait Games {
+  self: Worlds =>
 
   sealed abstract class State(val w: World, val steps: Int, collectedLambdas: Int) {
     def score = 25 * collectedLambdas - steps
@@ -145,7 +149,6 @@ trait Worlds {
   }
 
   case class Game(override val w: World, override val steps: Int, collectedLambdas: Int, stepsUnderwater: Int) extends State(w, steps, collectedLambdas) {
-
     def status = "in progress"
     def step(c: Command): State =
       c match {
@@ -179,7 +182,6 @@ trait Worlds {
             case Open =>
               Won(w, steps + 1, nextLambdas)
             case _ =>
-
               Game(w, steps + 1, nextLambdas, stepsUnderwater1)
           }
       }
@@ -199,7 +201,20 @@ trait Worlds {
     override def score = super.score + 50 * collectedLambdas
   }
 
-  def mkGame(lines: List[String]): Game = Game(mkWorld(lines), 0, 0, 0)
+  def mkGame(world: World): Game = Game(world, 0, 0, 0)
+
+  def playGame(game: State, commands: Traversable[Command]): State =
+    commands.foldLeft(game)((s, c) =>
+      s match {
+        case g: Game =>
+          // println("Step: %s".format(c))
+          // println(g.w)
+          // println()
+          g.step(c)
+        case _ =>
+          s
+      }
+    )
 }
 
 trait WorldsImpl extends Worlds {
@@ -279,7 +294,7 @@ trait WorldsImpl extends Worlds {
   }
 }
 
-trait StuffWeRun extends Worlds with WorldsImpl {
+trait StuffWeRun extends Games with Worlds with WorldsImpl {
   def validate(args: Seq[String]) {
     if (args.length != 2) {
       println("usage: Validator <map filename> <commands>")
@@ -287,27 +302,12 @@ trait StuffWeRun extends Worlds with WorldsImpl {
     }
     val lines = scala.io.Source.fromFile(args(0)).getLines().toList
     println(lines mkString "\n")
-    println()
     val commands = args(1) map (Command.unapply(_).get)
-    def exit(g: State): Nothing = {
-      println("%d of %d steps: %s".format(g.steps, commands.length, (commands take g.steps).mkString))
-      println(g)
-      sys.exit(0)
-    }
-    val result = commands.foldLeft(mkGame(lines))((g, c) => {
-      //    println("Step: %s".format(c))
-      //    println(g.w)
-      //    println()
-      g.step(c) match {
-        case g: Game => g
-        case g: Lost => exit(g)
-        case g: Aborted => exit(g)
-        case g: Won => exit(g)
-      }
-    })
-    exit(result)
+    val result = playGame(mkGame(mkWorld(lines)), commands)
+    println("%d of %d steps: %s".format(result.steps, commands.length, (commands take result.steps).mkString))
+    println(result)
   }
-  
+
   def interpret(args: Seq[String]) {
     if (args.length != 1) {
       println("usage: Interpreter <map filename>")
@@ -315,7 +315,7 @@ trait StuffWeRun extends Worlds with WorldsImpl {
     }
 
     val lines = scala.io.Source.fromFile(args(0)).getLines().toList
-    var game: Game = mkGame(lines)
+    var game: Game = mkGame(mkWorld(lines))
     val moves = scala.collection.mutable.ListBuffer[Command]()
 
     while(true) {
@@ -347,21 +347,21 @@ trait StuffWeRun extends Worlds with WorldsImpl {
     println(state.w)
     println("Score: %d (%s)".format(state.score, state.status))
   }
-  
+
   def tests(args: Seq[String]) {
-    val result = Tests.tests mapValues { _(this) } 
+    val result = Tests.tests mapValues { _(this) }
     println(result)
-    System.exit(result.values.count(!_))
+    System.exit(result.values.count(false ==))
   }
 }
 
-//object Validator extends App with StuffWeRun {
-//  validate(args)
-//}
-//
-//object Interpreter extends App with StuffWeRun {
-//  interpret(args)
-//}
+object Validator extends App with StuffWeRun {
+  validate(args)
+}
+
+object Interpreter extends App with StuffWeRun {
+  interpret(args)
+}
 
 object Main extends App with StuffWeRun {
   val cmd = args(0)
@@ -371,4 +371,66 @@ object Main extends App with StuffWeRun {
     case "i" => interpret(stuff)
     case "t" => tests(stuff)
   }
+}
+
+object Genetic1 extends App with Games with Worlds with WorldsImpl {
+  if (args.length != 1) { println("usage: Genetic1 <map filename>"); System.exit(255) }
+  val lines = scala.io.Source.fromFile(args(0)).getLines().toList
+  var game: Game = mkGame(mkWorld(lines))
+
+  def initialSize = 100
+  def maxLength = game.w.h * game.w.w / 5
+
+  def seed = 42
+  def rng = new scala.util.Random(seed)
+  def nextRandom: Int = rng.nextInt
+  def pickRandom[T](xs: T*): T = xs.toSeq(rng.nextInt(xs.toSeq.length))
+
+  type TaggedSeq = List[(Point, Command)]
+  def TaggedSeq(xs: (Point, Command)*) = List(xs: _*)
+  def eval(s: TaggedSeq): Int = playGame(game, s map (_._2)).score
+  implicit object ord extends Ordering[TaggedSeq] { def compare(s1: TaggedSeq, s2: TaggedSeq) = -(eval(s1).compare(eval(s2))) }
+  import scala.collection.immutable.SortedSet
+  type Population = SortedSet[TaggedSeq]
+  def Population(xs: Traversable[TaggedSeq]) = SortedSet[TaggedSeq](xs.toSeq: _*)
+
+  def mkPopulation(count: Int = initialSize): Population = Population(gen take count toList)
+
+  def gen: Iterator[TaggedSeq] = {
+    def genOne: TaggedSeq = {
+      var curPos = game.w.robot
+      var moves = TaggedSeq()
+      var attempts = -1
+      def nextMove: (Point, Command) = {
+        attempts += 1
+        if (attempts >= maxLength) (curPos, Abort)
+        else {
+          val wannabe = pickRandom(Right, Left, Down, Up)
+          val failed = moves find (_._1 == (curPos + wannabe.dir)) isDefined;
+          if (failed) nextMove else { curPos = curPos + wannabe.dir; (curPos, wannabe) }
+        }
+      }
+      val seq = Stream.empty.map((_: Nothing) => nextMove).takeWhile(x => x._2 != Abort)
+      seq.toList :+ (Invalid, Abort)
+    }
+    Stream.empty.map((_: Nothing) => genOne).iterator
+  }
+
+  def evolve(p: Population): Population = {
+    val allHybrids = for (a <- p; b <- p if (a.map(_._1).toSet intersect b.map(_._1).toSet).nonEmpty) yield crossover(a, b)
+    val hybrids = allHybrids take p.size/5
+    ((p ++ hybrids) take 4*p.size/5) ++ mkPopulation(p.size/5)
+  }
+
+  def crossover(s1: TaggedSeq, s2: TaggedSeq): TaggedSeq = {
+    val ixn = pickRandom(s1.map(_._1) intersect s2.map(_._1): _*)
+    val i1 = s1 indexOf ixn
+    val i2 = s2 indexOf ixn
+    (s1 take i1) ++ (s2 drop i2)
+  }
+
+  var p = mkPopulation()
+  for (i <- 0 to 100) p = evolve(p)
+  println(p.head map (_._2) mkString)
+  println(eval(p.head))
 }

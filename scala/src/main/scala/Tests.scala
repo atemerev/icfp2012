@@ -4,8 +4,8 @@ object Tests {
   def lines(source: String) = (source split "\n" tail) toList
 
   val tests = Map(
-    "varying width" -> ((w: Worlds) => {
-      val game = w.mkGame(lines(
+    "varying width" -> ((w: StuffWeRun) => {
+      val game = w.mkGame(w.mkWorld(lines(
         """
         #L#######
         #*** \\ #
@@ -24,7 +24,7 @@ object Tests {
 #.\**\*** .....**.# \\##\#
 #\R......     .\\.. \\\\\#
 ##########################"""
-      ))
+      )))
       game.w.w == 26
     })
   )
