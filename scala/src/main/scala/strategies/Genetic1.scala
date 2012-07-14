@@ -75,16 +75,15 @@ trait Genetic1 {
     }
 
     def evolve(p: Population): Population = {
-      val allHybrids = for (a <- p.view; b <- p.view if (a.map(_._1).toSet intersect b.map(_._1).toSet).nonEmpty) yield crossover(a, b)
+      val allHybrids = for (a <- p.view; b <- p.view if (a.map(_._1).toSet intersect b.map(_._1).toSet).nonEmpty
+        && (rng.nextInt(100) < 5)) yield crossover(a, b)
       (Population(p ++ allHybrids.flatten) take (p.size - ncrossover)) ++ mkPopulation(ncrossover)
     }
 
-    def crossover(s1: TaggedSeq, s2: TaggedSeq): Iterator[TaggedSeq] = {
-      if (crossCache((s1, s2)) || crossCache((s2, s1))) return Iterator()
-      crossCache += ((s1, s2))
+    def crossover(s1: TaggedSeq, s2: TaggedSeq): Seq[TaggedSeq] = {
       val points = s1.map(_._1) intersect s2.map(_._1)
 
-      val result = for (ixn <- points.view) yield {
+      val result = for (ixn <- points take 5) yield {
         val i1 = s1 indexWhere (_._1 == ixn)
         val i2 = s2 indexWhere (_._1 == ixn)
         //if (trace) {
@@ -92,7 +91,8 @@ trait Genetic1 {
         // }
         (s1 take i1) ++ (s2 drop i2)
       }
-      result.filter(x => eval(x) > eval(s1) && eval(x) > eval(s2)).iterator
+      val filtered = result.filter(x => eval(x) > eval(s1) && eval(x) > eval(s2))
+      filtered
     }
 
     var p = mkPopulation()
@@ -103,7 +103,7 @@ trait Genetic1 {
       p = evolve(p)
       if (trace) {
         println()
-        println("Iteration " + i + ", best score " + eval(p.head) + " =================================")
+        println("Iteration " + i + ", best score " + eval(p.head) + "\n" + playGame(game, p.head.map(_._2)).w.toString)
         //println(p map (_ map (_._2) mkString) mkString "\n")
       }
     }
