@@ -1,6 +1,8 @@
 package icfp
 package strategies
 
+import collection.SeqView
+
 trait Genetic1 {
   self: emulator.Commands with emulator.Games with emulator.Items with emulator.Points with emulator.States with emulator.Worlds =>
 
@@ -15,6 +17,7 @@ trait Genetic1 {
     def pickRandom[T](xs: T*): T = xs.toSeq(rng.nextInt(xs.toSeq.length))
 
     type TaggedSeq = List[(Point, Command)]
+    val crossCache = collection.mutable.Set[(TaggedSeq, TaggedSeq)]()
     val cache = collection.mutable.Map[TaggedSeq, Int]()
     def eval(s: TaggedSeq): Int = cache.getOrElseUpdate(s, playGame(game, s map (_._2)).score)
 
@@ -76,10 +79,12 @@ trait Genetic1 {
       (Population(p ++ allHybrids.flatten) take (p.size - ncrossover)) ++ mkPopulation(ncrossover)
     }
 
-    def crossover(s1: TaggedSeq, s2: TaggedSeq): List[TaggedSeq] = {
+    def crossover(s1: TaggedSeq, s2: TaggedSeq): Iterator[TaggedSeq] = {
+      if (crossCache((s1, s2)) || crossCache((s2, s1))) return Iterator()
+      crossCache += ((s1, s2))
       val points = s1.map(_._1) intersect s2.map(_._1)
 
-      val result = for (ixn <- points) yield {
+      val result = for (ixn <- points.view) yield {
         val i1 = s1 indexWhere (_._1 == ixn)
         val i2 = s2 indexWhere (_._1 == ixn)
         //if (trace) {
@@ -87,7 +92,7 @@ trait Genetic1 {
         // }
         (s1 take i1) ++ (s2 drop i2)
       }
-      result.filter(x => eval(x) > eval(s1) && eval(x) > eval(s2))
+      result.filter(x => eval(x) > eval(s1) && eval(x) > eval(s2)).iterator
     }
 
     var p = mkPopulation()
