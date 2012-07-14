@@ -346,8 +346,10 @@ object Interpreter extends App with Games with Worlds with WorldsImpl {
   }
 }
 
-trait Genetic1 extends Games with Worlds {
-  val game: Game
+object Genetic1 extends App with Games with Worlds with WorldsImpl {
+  if (args.length != 1) { println("usage: Genetic1 <map filename>"); System.exit(255) }
+  val lines = scala.io.Source.fromFile(args(0)).getLines().toList
+  var game: Game = mkGame(mkWorld(lines))
 
   def initialSize = 100
   def maxLength = game.w.h * game.w.w / 5
@@ -399,19 +401,9 @@ trait Genetic1 extends Games with Worlds {
     val i2 = s2 indexOf ixn
     (s1 take i1) ++ (s2 drop i2)
   }
-}
 
-object Genetic1App extends App with Games with Worlds with WorldsImpl {
-  if (args.length != 1) {
-    println("usage: Genetic1 <map filename>")
-    System.exit(255)
-  }
-
-  val lines = scala.io.Source.fromFile(args(0)).getLines().toList
-  var game0: Game = mkGame(mkWorld(lines))
-  val algo = new Genetic1 with WorldsImpl { val game = game0.asInstanceOf[this.Game] }
-  var p = algo.mkPopulation()
-  for (i <- 0 to 100) p = algo.evolve(p)
+  var p = mkPopulation()
+  for (i <- 0 to 100) p = evolve(p)
   println(p.head map (_._2) mkString)
-  println(algo.eval(p.head))
+  println(eval(p.head))
 }

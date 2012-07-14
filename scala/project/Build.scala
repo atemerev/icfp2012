@@ -95,7 +95,7 @@ object ProjectBuild extends Build {
             // fullRunInputTask(run, Compile, "icfp.Interpreter", filename)
             val logger = ConsoleLogger()
             Run.executeTrapExit({
-              Run.run("icfp.Genetic1App",
+              Run.run("icfp.Genetic1",
                       classpath map (_.data),
                       Seq(filename),
                       logger)(runner)
