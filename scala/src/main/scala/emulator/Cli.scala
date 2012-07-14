@@ -11,10 +11,6 @@ trait Cli {
     println(result)
   }
 
-  def runSubmission(g: State) {
-    ???
-  }
-
   def runInteractive(g: State): Commands = {
     var game = g.asInstanceOf[InProgress] // todo
     val moves = scala.collection.mutable.ListBuffer[Command]()

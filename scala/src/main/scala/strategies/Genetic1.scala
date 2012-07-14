@@ -4,7 +4,7 @@ package strategies
 trait Genetic1 {
   self: emulator.Commands with emulator.Games with emulator.Items with emulator.Points with emulator.States with emulator.Worlds =>
 
-  def genetic1(game: State): Commands = {
+  def genetic1(game: State, trace: Boolean = false): Commands = {
     def initialSize = 50
     def ncrossover = initialSize / 3
     def maxLength = game.w.h * game.w.w / 2
@@ -14,10 +14,11 @@ trait Genetic1 {
     def pickRandom[T](xs: T*): T = xs.toSeq(rng.nextInt(xs.toSeq.length))
 
     type TaggedSeq = List[(Point, Command)]
-    def TaggedSeq(xs: (Point, Command)*) = List(xs: _*)
     val cache = collection.mutable.Map[TaggedSeq, Int]()
     def eval(s: TaggedSeq): Int = cache.getOrElseUpdate(s, playGame(game, s map (_._2)).score)
+
     implicit object ord extends Ordering[TaggedSeq] { def compare(s1: TaggedSeq, s2: TaggedSeq) = -(eval(s1).compare(eval(s2))) }
+
     import scala.collection.immutable.SortedSet
     type Population = SortedSet[TaggedSeq]
     def Population(xs: Traversable[TaggedSeq]) = SortedSet[TaggedSeq](xs.toSeq: _*)
@@ -68,22 +69,30 @@ trait Genetic1 {
 
       val i1 = s1 indexWhere (_._1 == ixn)
       val i2 = s2 indexWhere (_._1 == ixn)
-      // println(i1 + "-" + i2)
+      if (trace) {
+        println(i1 + "-" + i2)
+      }
       (s1 take i1) ++ (s2 drop i2)
     }
 
     var p = mkPopulation()
-    // println(p map (_ map (_._2) mkString) mkString "\n")
+    if (trace) {
+      println(p map (_ map (_._2) mkString) mkString "\n")
+    }
     for (i <- 0 to 20) {
       p = evolve(p)
-      // println(i)
-      // println(p map (_ map (_._2) mkString) mkString "\n")
+      if (trace) {
+        println(i)
+        println(p map (_ map (_._2) mkString) mkString "\n")
+      }
     }
 
     val chosenOne = p.head
     val commands = chosenOne map (_._2)
-    // println(commands mkString)
-    // println(eval(chosenOne))
+    if (trace) {
+      println(commands mkString)
+      println(eval(chosenOne))
+    }
     commands
   }
 }
