@@ -7,6 +7,7 @@ trait Worlds {
   // curious, so we count from 0? how about water? Have to check it
   trait WorldApi {
     def apply(point: Point): Item
+    def moveTo(point: Point): World = update(point, Robot)
     def update(point: Point, item: Item): World
     def h: Int
     def w: Int
@@ -22,6 +23,7 @@ trait Worlds {
   def mkWorld(lines: List[String]): World
 }
 
+// (vp) I believe we'll gain a lot if we switch from a list of lists of items to a linear byte array. flyweight pattern.
 trait WorldsImpl extends Worlds {
   case class World(data: List[List[Item]], metadata: Map[String, String], age: Int) extends WorldApi {
     def apply(p: Point) = try {
@@ -33,6 +35,13 @@ trait WorldsImpl extends Worlds {
     } catch {case e: Exception => throw new IllegalArgumentException("fuck!@" + p + " in\n" + this, e)
     }
 
+    override def moveTo(point: Point): World = {
+      val newWorld = update(point, Robot)
+      newWorld.robotAt = point
+      newWorld.liftAt = liftAt
+      newWorld
+    }
+    
     def update(p: Point, item: Item) =
       World(data.zipWithIndex map {
         case (line, y) =>
@@ -50,9 +59,29 @@ trait WorldsImpl extends Worlds {
       def flooding = metadata.getOrElse("Flooding", "0").toInt
       def waterproof = metadata.getOrElse("Waterproof", "10").toInt
 
+      def isA(item: Item)(p: (Int, Int)) = this(p) == item
+      def oneOf(items: Item*)(p: (Int, Int)) = items exists (this(p)==_)
+      def points = for (x <- 0 to w; y <- 0 to h) yield (x, y)
+      def lambdas = points filter (isA(Lambda))
+    
+      def find(what: Item): Option[(Int, Int)] = points find (isA(what))
+
+      // make sense to pass it between generations, together with meta, in an additional props structure
+      private var liftAt: Point = Invalid
+      def whereLift = {
+        if (liftAt == Invalid) for (p <- points find(oneOf(Open, Closed))) liftAt = p
+        liftAt
+      }
+
+      def distanceToLift(p: Point) = p.distanceTo(whereLift)
+
+      def lambdaClosestToLift = (lambdas map (p => (distanceToLift(p), p)) min)._2
+    
+      private var robotAt: Point = Invalid
+
       def robot: Point = {
-        for (x <- 0 to w; y <- 0 to h if this(x, y) == Robot) return Point(x, y)
-        Invalid
+        if (robotAt == Invalid) for (p <- find(Robot)) robotAt = p
+        robotAt
       }
 
       def remainingLambdas = data.flatten.count(_ == Lambda)

@@ -1,5 +1,7 @@
 package icfp
 
+import icfp.Prelude.Point
+
 case class Tests(w: StuffWeRun) {
 
   def fmt(x: Any) = if (x.toString contains "\n") ("\n" + x + "\n") else (" <" + x + ">")
@@ -21,12 +23,8 @@ case class Tests(w: StuffWeRun) {
 #####"""
   ))
 
-//  type Test = (=>(String, String))
-
-  val tests:Map[String, ()=>(Any, Any)] = Map(
-    "varying width" -> (() => {
-      val game = w.mkGame(w.mkWorld(lines(
-        """
+  val crossWorld = w.mkWorld(lines(
+"""
         #L#######
         #*** \\ #
         #\\\ .. #
@@ -44,7 +42,13 @@ case class Tests(w: StuffWeRun) {
 #.\**\*** .....**.# \\##\#
 #\R......     .\\.. \\\\\#
 ##########################"""
-      )))
+  ))
+
+//  type Test = (=>(String, String))
+
+  val tests:Map[String, ()=>(Any, Any)] = Map(
+    "varying width" -> (() => {
+      val game = w.mkGame(crossWorld)
       (26, game.w.w)
     }),
   "wall at 0,0" -> (() => { (Wall, smallWorld((0, 0))) }),
@@ -77,6 +81,12 @@ case class Tests(w: StuffWeRun) {
 #####"""
     ))
     (expected, smallWorld.evolve)
-  })
+  }),
+  "find lift" -> (() => {
+    (Point(9,16), crossWorld.whereLift)
+  }),
+    "lambda closest lift" -> (() => {
+      ((9,14), crossWorld.lambdaClosestToLift)
+    })
   )
 }
