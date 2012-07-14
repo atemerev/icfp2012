@@ -121,7 +121,7 @@ trait DumbWorlds {
           w = w.update((x, y), Empty)
           w = w.putRock(x + 1, y - 1)
         } else if (this(x,y) == Rock && this(x, y - 1) == Rock &&
-          (this(x + 1, y) != Empty || (this(x + 1, y - 1) != Empty && this(x - 1, y) == Empty && this(x - 1, y - 1) == Empty))) {
+          (this(x + 1, y) != Empty || this(x + 1, y - 1) != Empty) && this(x - 1, y) == Empty && this(x - 1, y - 1) == Empty) {
           w = w.update((x, y), Empty)
           w = w.putRock(x - 1, y - 1)
         } else if (this(x,y) == Rock && this(x, y - 1) == Lambda && this(x + 1, y) == Empty && this(x + 1, y - 1) == Empty) {
