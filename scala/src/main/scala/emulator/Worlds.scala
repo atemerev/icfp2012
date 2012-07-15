@@ -31,6 +31,7 @@ trait Worlds {
     def isFinal: Boolean
     def finalCommand: Command
     def liftIsBlockedForever: Boolean
+    def trampolines: Map[Trampoline, Point]
   }
 
   def mkWorld(lines: List[String], age: Int = 0): World
@@ -39,7 +40,7 @@ trait Worlds {
 trait DumbWorlds {
   self: Commands with Games with Items with Points with States with Worlds =>
 
-  case class World(data: List[List[Item]], metadata: Map[String, String], age: Int) extends WorldApi {
+  case class World(data: List[List[Item]], trampolines: Map[Trampoline, Point], metadata: Map[String, String], age: Int) extends WorldApi {
     def apply(p: Point) = try {
       if (data.isDefinedAt(p.y) &&
           data(p.y).isDefinedAt(p.x))
@@ -64,13 +65,13 @@ trait DumbWorlds {
             case (_, x) if x == p.x && y == p.y => item
             case (item, _) => item
           }
-      }, metadata, age)
+      }, trampolines, metadata, age)
 
     def h = data.length
     def w = data(0).length
 
     def water = metadata.getOrElse("Water", "0").toInt
-    def water_=(value: Int): World = World(data, metadata + ("Water" -> value.toString), age)
+    def water_=(value: Int): World = World(data, trampolines, metadata + ("Water" -> value.toString), age)
     def flooding = metadata.getOrElse("Flooding", "0").toInt
     def waterproof = metadata.getOrElse("Waterproof", "10").toInt
     def timeToNextFlood = if (flooding == 0) Int.MaxValue else (flooding - age % flooding)
@@ -204,15 +205,24 @@ trait DumbWorlds {
   def mkWorld(lines0: List[String], age: Int = 0) = { // (xb to vp) why explicit age?
     val lines = lines0 filter (!_.startsWith(";;"))
     val mine: List[String] = lines dropWhile (_.isEmpty) takeWhile (!_.isEmpty)
+    val trampolines = collection.mutable.Map[Char, Char]()
     var metadata: Map[String, String] = lines drop (mine.length + 1) takeWhile (!_.isEmpty) map (line => {
-      val Format = """^(\w+)\s+(.+?)\s*$""".r
-      val Format(key, value) = line
-      (key, value)
+      if (line startsWith "Trampoline") {
+        val Format = """^Trampoline (.) targets (.)$""".r
+        val Format(name, destination) = line
+        trampolines += (name(0) -> destination(0))
+        ("", "")
+      } else {
+        val Format = """^(\w+)\s+(.+?)\s*$""".r
+        val Format(key, value) = line
+        (key, value)
+      }
     }) toMap
+    val targets = collection.mutable.Map[Trampoline, Point]()
     val parsed = mine.zipWithIndex map { case (line, y) =>
       line.zipWithIndex map { case (c, x) =>
         if ('1' <= c && c <= '9') {
-          metadata += (c.toString -> "%s;%s".format(y, x))
+          targets += (Trampoline(c) -> (x, y))
           Empty
         } else {
           try {
@@ -224,9 +234,10 @@ trait DumbWorlds {
           }
         }
       } toList
-    } toList
+    } toList;
+    for ((t, Point(x, y)) <- targets.toList) targets(t) = Point(x, parsed.length - y - 1)
     val width = parsed map (_.length) max
     val padded = parsed map (_.padTo(width, Empty))
-    World(padded.reverse, metadata, 0)
+    World(padded.reverse, targets.toMap, metadata, 0)
   }
 }
