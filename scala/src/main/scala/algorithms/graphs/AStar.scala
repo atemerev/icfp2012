@@ -41,6 +41,7 @@ class AStar[A,B](trace: Boolean) {
       val p = N._3.head
       val u = p._1
       Qmap -= u
+      println("trying" + p)
       if(goal(u)){
         return  N
       }
@@ -56,7 +57,7 @@ class AStar[A,B](trace: Boolean) {
           val f = gVal + h(v)
           val Nv = (f,gVal,(v,e)::N._3)
           if(Qmap.contains(v)){// if there already exists a path to this node from some other route
-            if(Qmap(v)._2 > gVal){ // and the cost of that path is greater than this one  
+            if(Qmap(v)._2 > gVal){ // and the cost of that path is greater than this one
               // then remove that path from the Queue
               Q -= Qmap(v)
               Qmap -= v
@@ -65,6 +66,7 @@ class AStar[A,B](trace: Boolean) {
               Qmap += v -> Nv
             }
           }else{
+            println("" + Nv + ": NEVER SEEN BEFORE?")
             Q += Nv
             Qmap += v -> Nv
           }
