@@ -47,9 +47,11 @@ trait Chess {
 
   def mkTree(state: State) = Node(null, null, state, 1, false)
 
-  def chess(game: State, trace: Boolean): Commands = {
+  def chess(game: State, timeout: Int, trace: Boolean): Commands = {
+    val start = System.currentTimeMillis()
+    def isTimeout = (System.currentTimeMillis() - start) / 1000 > timeout
     var g = game
-    while (!g.terminal && g.commands.size <= g.w.w * g.w.h) {
+    while (!isTimeout && !g.terminal && g.commands.size <= g.w.w * g.w.h) {
       if (trace) println(g.w)
       lambdaMaps = g.w.remainingLambdaPositions map (p => p -> mkDistMap(g.w, p)) toMap;
       liftMap = mkDistMap(g.w, g.w.lift)
@@ -68,7 +70,7 @@ trait Chess {
 //      }
     }
 //    println(bestAborts.map({ case (s,i) => (s.commands.mkString, i)}).toList.sortBy(-_._2))
-    val bestAbort = (bestAborts maxBy { case (s, i) => s.score })._1
+    val bestAbort = ((bestAborts + (game -> -1)) maxBy { case (s, i) => s.score })._1
     val bestResult = List(bestAbort, g) maxBy (_.score)
     val commands = bestResult.commands
     if (trace) {

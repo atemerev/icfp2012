@@ -6,7 +6,7 @@ import collection.SeqView
 trait Genetic1 {
   self: emulator.Commands with emulator.Games with emulator.Items with emulator.Points with emulator.States with emulator.Worlds with Pathfinder =>
 
-  def genetic1(game: State, trace: Boolean = false): Commands = {
+  def genetic1(game: State, timeout: Int, trace: Boolean): Commands = {
     def initialSize = 70
     def iterations = 100
     def ncrossover = initialSize / 3
@@ -132,7 +132,9 @@ trait Genetic1 {
           val prev = mods.getOrElse(pos, 0)
           mods(pos) = prev + cache(seq).score
         }))
-        println(mods)
+        if (trace) {
+          println(mods)
+        }
 
         if (trace) {
           println()

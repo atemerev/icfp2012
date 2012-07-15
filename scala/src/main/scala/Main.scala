@@ -1,8 +1,6 @@
 package icfp
 
-import strategies.AStarSearch
-
-object Main extends App with DumbEmulator with Strategies with AStarSearch with emulator.Cli {
+object Main extends App with DumbEmulator with Strategies with emulator.Cli {
   def loadLines(url: String): List[String] =
     // (xb) would also be great to automatically download samples from the server
     scala.io.Source.fromFile(url).getLines().toList
@@ -37,22 +35,22 @@ object Main extends App with DumbEmulator with Strategies with AStarSearch with 
       println(if (report.isEmpty) "Passed" else report)
       sys.exit(report.length)
     case "gen1" =>
-      if (stuff.length > 2) { println("usage: gen1 [map] [trace]"); sys.exit(-1) }
+      if (stuff.length != 1 && stuff.length != 2) { println("usage: gen1 <url of map> [<trace>]"); sys.exit(-1) }
       val game = readGame
       val trace = stuff.length == 2
-      val commands = genetic1(game, trace)
+      val commands = genetic1(game, 150, trace)
       println(commands.mkString)
-    case "a*" =>
-      if (stuff.length > 2) { println("Usage: ast [map] [trace]"); sys.exit(-1) }
+    case "ast" => // renamed from a* to be consistent with sbt
+      if (stuff.length != 1 && stuff.length != 2) { println("Usage: ast <url of map> [<trace>]"); sys.exit(-1) }
       val game = readGame
       val trace = stuff.length == 2
-      val commands = search(game, trace)
+      val commands = search(game, 150, trace)
       println(commands.mkString)
     case "chess" =>
-      if (stuff.length > 2) { println("Usage: chess [map] [trace]"); sys.exit(-1) }
+      if (stuff.length != 1 && stuff.length != 2) { println("Usage: chess <url of map> [<trace>]"); sys.exit(-1) }
       val game = readGame
       val trace = stuff.length == 2
-      val commands = chess(game, trace)
+      val commands = chess(game, 150, trace)
       println(commands.mkString)
     case "p" =>
       val game = mkGame(mkWorld(
@@ -78,5 +76,36 @@ object Main extends App with DumbEmulator with Strategies with AStarSearch with 
       val start = game.w.robot
       val end = game.w.lift
       println(findPath(start, mkDistMap(game.w, end)).mkString)
+    case "tourney" =>
+      if (stuff.length != 1 && stuff.length != 2) { println("Usage: tourney <algo> [<timeout in seconds (per map)>]"); sys.exit(-1) }
+      val algo = stuff(0)
+      val timeout = if (stuff.length == 1) 10 else stuff(1).toInt
+      println("algo is " + algo)
+      val data = System.getProperty("user.dir") + "/../data"
+      val tests = new java.io.File(data).listFiles.toList.sorted
+      tests foreach { test =>
+        print(test.getName + "... ")
+        val skip = !(test.getName.startsWith("0") || test.getName.startsWith("1") || test.getName.startsWith("spec"))
+        if (skip) println("skipped")
+        else {
+          val start = System.currentTimeMillis()
+          try {
+            val lines = loadLines(test.getCanonicalPath)
+            val hiscore = if (lines(0).startsWith(";;")) lines(0).substring(2).trim else "???"
+            val game = mkGame(mkWorld(lines))
+            val commands = algo match {
+              case "gen1" => genetic1(game, timeout, false)
+              case "ast" => search(game, timeout, false)
+              case "chess" => chess(game, timeout, false)
+            }
+            val finalState = playGame(game, commands)
+            print(finalState.score + " / " + hiscore)
+          } catch {
+            case _ => print("*")
+          }
+          val end = System.currentTimeMillis()
+          println(" [" + (end - start) / 1000 + " s]")
+        }
+      }
   }
 }

@@ -25,7 +25,7 @@ trait AStarSearch {
         val newEdges: Iterable[Edge[State, Command]] = neighbors map { case (state, command) => newEdge(command, state) }
         newEdges foreach ((e: Edge[State, Command]) => graph.addEdge(e))
       }
-      
+
       override def adjacent() : Set[Edge[State, Command]] = {
         if (!knowsNeighbors) {
           createNeighbors
@@ -43,21 +43,21 @@ trait AStarSearch {
 
   def eval(node: Vertex[State, Command]): Double = if (node.data.mayGetToLift) node.data.w.remainingLambdas else SOME_STUPID_BIG_NUMBER * 2
 
-  def search(state: State, trace: Boolean = false): Commands = {
+  def search(state: State, timeout: Int, trace: Boolean): Commands = {
     println(state.w.lift)
     if (trace) println("Running " + state)
     val withLambdas = collectLambdas(state, trace)
     val atLift = getToLift(withLambdas._2)
     withLambdas._1 ++ atLift._1
   }
-  
+
   val theEnd = (state: State) => {
     if (state.w.robot.distanceTo(state.w.lift) < 3) println("Is " + state + " final?!?!")
     state.status == "won"
   }
 
   def getToLift(start: State, trace: Boolean = false): (Commands, State) = findPath(start, theEnd, trace)
-    
+
   def collectLambdas(start: State, trace: Boolean = false): (Commands, State) = findPath(start, hasAllLambdas, trace)
 
   def findPath(start: State, isGoal: State => Boolean, trace: Boolean = false): (Commands, State) = {
