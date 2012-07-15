@@ -63,7 +63,7 @@ trait Chess {
       bestAborts :+= bestAbort.state
       g = bestGame.state
     }
-    val bestAbort = bestAborts maxBy (s => score(s))
+    val bestAbort = (bestAborts :+ game) maxBy (s => score(s))
     val bestResult = List(bestAbort, g) maxBy (s => score(s))
     val commands = bestResult.commands
     if (trace) {
