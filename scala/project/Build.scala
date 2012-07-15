@@ -81,6 +81,7 @@ object ProjectBuild extends Build {
       InputKey[Unit]("game") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
         (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
           if (args.length != 1 && args.length != 2) {
+            println("incoming: game " + (args mkString " "))
             println("usage: game <file name in data> [<mods>]")
           } else {
             val filename = file("../data/" + args(0) + ".txt").absolutePath
@@ -97,6 +98,7 @@ object ProjectBuild extends Build {
       InputKey[Unit]("gen1") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
         (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
           if (args.length != 1 && args.length != 2) {
+            println("incoming: gen1 " + (args mkString " "))
             println("usage: gen1 <file name in data> [<mods>]")
           } else {
             val filename = file("../data/" + args(0) + ".txt").absolutePath
@@ -113,6 +115,7 @@ object ProjectBuild extends Build {
       InputKey[Unit]("ast") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
         (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
           if (args.length != 1 && args.length != 2) {
+            println("incoming: ast " + (args mkString " "))
             println("usage: ast <file name in data> [<mods>]")
           } else {
             val filename = file("../data/" + args(0) + ".txt").absolutePath
@@ -129,6 +132,7 @@ object ProjectBuild extends Build {
       InputKey[Unit]("chess") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
         (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
           if (args.length != 1 && args.length != 2) {
+            println("incoming: chess " + (args mkString " "))
             println("usage: chess <file name in data> [<mods>]")
           } else {
             val filename = file("../data/" + args(0) + ".txt").absolutePath
@@ -146,6 +150,7 @@ object ProjectBuild extends Build {
       InputKey[Unit]("our-test") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
         (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
           if (args.length != 0) {
+            println("incoming: our-test " + (args mkString " "))
             println("usage: our-test")
           } else {
             val logger = ConsoleLogger()
@@ -155,6 +160,31 @@ object ProjectBuild extends Build {
                       Seq("t"),
                       logger)(runner)
             }, logger)
+          }
+        }
+      },
+      InputKey[Unit]("tourney") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
+        (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
+          val algos = List("gen1", "ast", "chess")
+          def usage = {
+            println("incoming: tourney " + (args mkString " "))
+            println("usage: tourney <algo>")
+            println("where <algo> is one of:")
+            algos foreach (algo => println("* " + algo))
+          }
+          if (args.length != 1) usage
+          else {
+            val algo = args(0)
+            if (!(algos contains algo)) usage
+            else {
+              val logger = ConsoleLogger()
+              Run.executeTrapExit({
+                Run.run("icfp.Main",
+                        classpath map (_.data),
+                        Seq("tourney", algo),
+                        logger)(runner)
+              }, logger)
+            }
           }
         }
       }
