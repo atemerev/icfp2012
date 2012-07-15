@@ -8,8 +8,10 @@ trait States {
   self: Commands with Games with Items with Points with States with Worlds =>
 
   sealed trait State {
+    def commands: Commands
+    def terminal: Boolean = false
     def w: World
-    def steps: Int
+    def steps: Int = commands.size
     def collectedLambdas: Int
     def stepsUnderwater: Int = 0
     def score = 25 * collectedLambdas - steps
@@ -40,22 +42,25 @@ trait States {
     }
   }
 
-  case class InProgress(w: World, steps: Int, collectedLambdas: Int, suw: Int) extends State {
+  case class InProgress(w: World, commands: Commands, collectedLambdas: Int, suw: Int) extends State {
     def status = "in progress"
     override def stepsUnderwater = suw
     def step(c: Command): State = stepGame(this, c)
   }
 
-  case class Lost(w: World, steps: Int, collectedLambdas: Int) extends State {
+  case class Lost(w: World, commands: Commands, collectedLambdas: Int) extends State {
+    override def terminal = true
     def status = "lost"
   }
 
-  case class Aborted(w: World, steps: Int,  collectedLambdas: Int) extends State {
+  case class Aborted(w: World, commands: Commands, collectedLambdas: Int) extends State {
+    override def terminal = true
     def status = "aborted"
     override def score = super.score + 25 * collectedLambdas
   }
 
-  case class Won(w: World, steps: Int, collectedLambdas: Int) extends State {
+  case class Won(w: World, commands: Commands, collectedLambdas: Int) extends State {
+    override def terminal = true
     def status = "won"
     override def score = super.score + 50 * collectedLambdas
   }

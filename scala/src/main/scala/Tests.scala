@@ -59,7 +59,7 @@ val deepWell = """
   val slowFillingWell = mkWorld(lines(deepWell + "\n\nFlooding 5\nWaterproof 3"))
   val fastFillingWell = mkWorld(lines(deepWell + "\n\nFlooding 2\nWaterproof 3"))
 
-  def newState(world: World) = new InProgress(world, 0, 0, 0){
+  def newState(world: World) = new InProgress(world, Nil, 0, 0){
     override def status: String = "I'm okay so far; you?"
   }
 

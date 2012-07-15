@@ -37,16 +37,22 @@ object Main extends App with DumbEmulator with Strategies with AStarSearch with 
       println(if (report.isEmpty) "Passed" else report)
       sys.exit(report.length)
     case "gen1" =>
-      if (stuff.length > 2) { println("usage: gen1 [map]"); sys.exit(-1) }
+      if (stuff.length > 2) { println("usage: gen1 [map] [trace]"); sys.exit(-1) }
       val game = readGame
-      val trace = stuff.length == 1
+      val trace = stuff.length == 2
       val commands = genetic1(game, trace)
       println(commands.mkString)
     case "a*" =>
-      if (stuff.length > 2) { println("Usage: ast [map]" + stuff); sys.exit(-1) }
+      if (stuff.length > 2) { println("Usage: ast [map] [trace]"); sys.exit(-1) }
       val game = readGame
-      val trace = stuff.length == 1
+      val trace = stuff.length == 2
       val commands = search(game, trace)
+      println(commands.mkString)
+    case "chess" =>
+      if (stuff.length > 2) { println("Usage: chess [map] [trace]"); sys.exit(-1) }
+      val game = readGame
+      val trace = stuff.length == 2
+      val commands = chess(game, trace)
       println(commands.mkString)
     case "p" =>
       val game = mkGame(mkWorld(

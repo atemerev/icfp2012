@@ -4,7 +4,7 @@ package emulator
 trait Games {
   self: Commands with Games with Items with Points with States with Worlds =>
 
-  def mkGame(world: World): InProgress = InProgress(world, 0, 0, 0)
+  def mkGame(world: World): InProgress = InProgress(world, Nil, 0, 0)
 
   def stepGame(g: State, c: Command): State = maybeStep(g, c) getOrElse g
 
@@ -15,7 +15,7 @@ trait Games {
       case g: InProgress =>
         c match {
           case Abort =>
-            Some(Aborted(g.w, g.steps + 1, g.collectedLambdas)) // steps + 1 or steps?
+            Some(Aborted(g.w, g.commands :+ c, g.collectedLambdas)) // steps + 1 or steps?
           case _ =>
             var w = g.w
             // there=s a difference between steps and moves. W is a step but not a move. U when on top is neither, we should not be wasting resources
@@ -45,9 +45,9 @@ trait Games {
 
             val nextLambdas = g.collectedLambdas + g.w.remainingLambdas - w.remainingLambdas
             if (!wasLegalStep) None else Some(
-            if (w.isFinal)          Won(w, g.steps + 1, nextLambdas)  else
-            if (w.robot == Invalid) Lost(w, g.steps + 1, nextLambdas) else
-                                    InProgress(w, g.steps + 1, nextLambdas, stepsUnderwater1))
+            if (w.isFinal)          Won(w, g.commands :+ c, nextLambdas)  else
+            if (w.robot == Invalid) Lost(w, g.commands :+ c, nextLambdas) else
+                                    InProgress(w, g.commands :+ c, nextLambdas, stepsUnderwater1))
         }
       case _ =>
         None

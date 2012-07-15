@@ -50,7 +50,7 @@ trait Commands {
     override def toString = "A"
   }
 
-  type Commands = Traversable[Command]
+  type Commands = List[Command]
 
-  def mkCommands(line: String) = line map (Command.unapply(_).get)
+  def mkCommands(line: String): Commands = (line map (Command.unapply(_).get)).toList
 }

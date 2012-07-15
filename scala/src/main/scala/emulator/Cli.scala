@@ -37,7 +37,7 @@ trait Cli {
       }
     }
 
-    moves
+    moves.toList
   }
 
   private def render(state: State) {
