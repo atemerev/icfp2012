@@ -10,7 +10,7 @@ trait AStarSearch {
   self: emulator.Commands with emulator.Games with emulator.Items with emulator.Points with emulator.States with emulator.Worlds =>
   val SOME_STUPID_BIG_NUMBER:Double = 40876.
   val knownCommands = Set(Left, Right, Up, Down, Wait)
-  val weight = Map[Command, Double](Left -> 1, Right -> 1, Up -> 1, Down -> 1, Wait -> 0)
+  val weight = Map[Command, Double](Left -> 1, Right -> 1, Up -> 1, Down -> 1, Wait -> 0.5)
   val graph: Graph[State, Command] = Graph(Nil, true)
 
   def vertex(state: State): Vertex[State, Command] = {
