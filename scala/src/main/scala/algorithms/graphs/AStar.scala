@@ -41,6 +41,7 @@ class AStar[A,B](trace: Boolean) {
       val p = N._3.head
       val u = p._1
       Qmap -= u
+      println("trying" + p)
       if(goal(u)){
         return  N
       }

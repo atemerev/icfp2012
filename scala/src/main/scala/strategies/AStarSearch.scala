@@ -51,7 +51,10 @@ trait AStarSearch {
     withLambdas._1 ++ atLift._1
   }
   
-  val theEnd = (state: State) => state.status == "won"
+  val theEnd = (state: State) => {
+    if (state.w.robot.distanceTo(state.w.lift) < 3) println("Is " + state + " final?!?!")
+    state.status == "won"
+  }
 
   def getToLift(start: State, trace: Boolean = false): (Commands, State) = findPath(start, theEnd, trace)
     
