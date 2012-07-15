@@ -85,8 +85,8 @@ object Main extends App with DumbEmulator with Strategies with emulator.Cli {
       val tests = new java.io.File(data).listFiles.toList.sorted
       tests foreach { test =>
         print(test.getName + "... ")
-        // val skip = !(test.getName.startsWith("0") || test.getName.startsWith("1") || test.getName.startsWith("spec"))
-        val skip = !test.getName.startsWith("spec")
+        val skip = !(test.getName.startsWith("0") || test.getName.startsWith("1") || test.getName.startsWith("spec"))
+        // val skip = !test.getName.startsWith("spec")
         if (skip) println("skipped")
         else {
           val start = System.currentTimeMillis()
