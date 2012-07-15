@@ -29,6 +29,8 @@ trait Items {
       case 'G' => Some(Trampoline(name = c))
       case 'H' => Some(Trampoline(name = c))
       case 'I' => Some(Trampoline(name = c))
+      case 'W' => Some(Beard)
+      case '!' => Some(Razor)
       case _ => None
     }
   }
@@ -83,6 +85,18 @@ trait Items {
 
   case class Trampoline(name: Char) extends Item {
     override def toString = (name + "").toString
+    def isPassable = true
+    def isRock = false
+  }
+
+  case object Beard extends Item {
+    override def toString = "W"
+    def isPassable = false
+    def isRock = false
+  }
+
+  case object Razor extends Item {
+    override def toString = "!"
     def isPassable = true
     def isRock = false
   }
