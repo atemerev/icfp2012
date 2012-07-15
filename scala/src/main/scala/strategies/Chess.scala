@@ -64,6 +64,10 @@ trait Chess {
       val bestAbort = aborts.maxBy(l => score(l.state))
       bestAborts += (bestAbort.state -> score(bestAbort.state))
       g = bestGame.state
+//      for (lm <- lambdaMaps) {
+//        println(lm._2.transpose.map(x => x.map(i => if (i > 1000) "#" else "%1d".format(i)).mkString("")).reverse.mkString("\n"))
+//        println()
+//      }
     }
 //    println(bestAborts.map({ case (s,i) => (s.commands.mkString, i)}).toList.sortBy(-_._2))
     val bestAbort = ((bestAborts + (game -> -1)) maxBy { case (s, i) => s.score })._1
