@@ -7,6 +7,7 @@ trait Chess {
 
   val MAX_LEVEL = 4
 
+  var bestAborts = List[State]()
   var lambdaMaps = Map[Point, DistanceMap]()
   var liftMap: DistanceMap = null
 
@@ -31,12 +32,11 @@ trait Chess {
 
   def step(ip: InProgress, c: Command) = cache.getOrElseUpdate((ip, c), ip.step(c))
 
-  case class Node(parent: Node, command: Command, state: State, level: Int) {
+  case class Node(parent: Node, command: Command, state: State, level: Int, aborted: Boolean) {
     lazy val children: List[Node] = {
-//      if (level >= MAX_LEVEL) Nil else List(Up, Down, Left, Right, Abort, Wait).flatMap(c => state match {
-      val commands = List(Up, Down, Left, Right, Wait)
+      val commands = List(Up, Down, Left, Right, Abort, Wait)
       if (level > MAX_LEVEL) Nil else commands.flatMap(c => state match {
-        case ip: InProgress if step(ip, c).w.robot != state.w.robot => Some(Node(this, c, step(ip, c), level + 1))
+        case ip: InProgress if step(ip, c).w.robot != state.w.robot => Some(Node(this, c, step(ip, c), level + 1, c == Abort))
         case _ => None
       })
     }
@@ -45,7 +45,7 @@ trait Chess {
     lazy val commands: Commands = if (parent == null) Nil else parent.commands.toList :+ command
   }
 
-  def mkTree(state: State) = Node(null, null, state, 1)
+  def mkTree(state: State) = Node(null, null, state, 1, false)
 
   def chess(game: State, trace: Boolean): Commands = {
     var g = game
@@ -57,14 +57,19 @@ trait Chess {
       if (trace) {
 //        leaves.sortBy(l => -score(l.state)).foreach(l => println("%s: %s".format(l.commands.mkString, score(l.state))))
       }
-      val maxBy = leaves.maxBy(l => score(l.state))
-      g = maxBy.state
+      val (aborts, games) = leaves partition (_.aborted)
+      val bestGame = games.maxBy(l => score(l.state))
+      val bestAbort = aborts.maxBy(l => score(l.state))
+      bestAborts :+= bestAbort.state
+      g = bestGame.state
     }
-    val commands = g.commands
+    val bestAbort = bestAborts maxBy (s => score(s))
+    val bestResult = List(bestAbort, g) maxBy (s => score(s))
+    val commands = bestResult.commands
     if (trace) {
-      println(g.w)
+      println(bestResult.w)
       println(commands mkString)
-      println(g.score)
+      println(bestResult.score)
     }
     commands
   }
