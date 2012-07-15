@@ -194,7 +194,8 @@ trait DumbWorlds {
 //    }
   }
 
-  def mkWorld(lines: List[String], age: Int = 0) = { // (xb to vp) why explicit age?
+  def mkWorld(lines0: List[String], age: Int = 0) = { // (xb to vp) why explicit age?
+    val lines = lines0 filter (!_.startsWith(";;"))
     val mine: List[String] = lines dropWhile (_.isEmpty) takeWhile (!_.isEmpty)
     val metadata: Map[String, String] = lines drop (mine.length + 1) takeWhile (!_.isEmpty) map (line => {
       val Format = """^(\w+)\s+(.+?)\s*$""".r

@@ -85,21 +85,27 @@ object Main extends App with DumbEmulator with Strategies with emulator.Cli {
       val tests = new java.io.File(data).listFiles.toList.sorted
       tests foreach { test =>
         print(test.getName + "... ")
-        val start = System.currentTimeMillis()
-        try {
-          val game = mkGame(mkWorld(loadLines(test.getCanonicalPath)))
-          val commands = algo match {
-            case "gen1" => genetic1(game, timeout, false)
-            case "ast" => search(game, timeout, false)
-            case "chess" => chess(game, timeout, false)
+        val skip = !(test.getName.startsWith("0") || test.getName.startsWith("1") || test.getName.startsWith("spec"))
+        if (skip) println("skipped")
+        else {
+          val start = System.currentTimeMillis()
+          try {
+            val lines = loadLines(test.getCanonicalPath)
+            val hiscore = if (lines(0).startsWith(";;")) lines(0).substring(2).trim else "???"
+            val game = mkGame(mkWorld(lines))
+            val commands = algo match {
+              case "gen1" => genetic1(game, timeout, false)
+              case "ast" => search(game, timeout, false)
+              case "chess" => chess(game, timeout, false)
+            }
+            val finalState = playGame(game, commands)
+            print(finalState.score + " / " + hiscore)
+          } catch {
+            case _ => print("*")
           }
-          val finalState = playGame(game, commands)
-          print(finalState.score)
-        } catch {
-          case _ => print("*")
+          val end = System.currentTimeMillis()
+          println(" [" + (end - start) / 1000 + " s]")
         }
-        val end = System.currentTimeMillis()
-        println(" [" + (end - start) / 1000 + " s]")
       }
   }
 }
