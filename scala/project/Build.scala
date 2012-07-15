@@ -110,6 +110,22 @@ object ProjectBuild extends Build {
           }
         }
       },
+      InputKey[Unit]("ast") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
+        (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
+          if (args.length != 1) {
+            println("usage: ast <file name in data>")
+          } else {
+            val filename = file("../data/" + args(0) + ".txt").absolutePath
+            val logger = ConsoleLogger()
+            Run.executeTrapExit({
+              Run.run("icfp.Main",
+                classpath map (_.data),
+                Seq("a*", filename),
+                logger)(runner)
+            }, logger)
+          }
+        }
+      },
       InputKey[Unit]("our-test") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
         (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
           if (args.length != 0) {
