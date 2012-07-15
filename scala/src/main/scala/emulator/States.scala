@@ -11,7 +11,7 @@ trait States {
     def w: World
     def steps: Int
     def collectedLambdas: Int
-    def stepsUnderwater: Int
+    def stepsUnderwater: Int = 0
     def score = 25 * collectedLambdas - steps
     def status: String
     override def toString = "status = " + status + "\n" + w
@@ -30,28 +30,32 @@ trait States {
     }
 
     def mayGetToLift: Boolean = { // this is simplistic; there can be more conditions, could add later
-      (Point(position.x, position.y - stepsToWater) distanceTo lift) <= timeToLiveUnderWater
+      !w.liftIsBlockedForever && (Point(position.x, position.y - stepsToWater) distanceTo lift) <= timeToLiveUnderWater
+    }
+    def haveAllLambdas = w.remainingLambdas == 0
+
+    override def equals(x: Any) = x.isInstanceOf[State] && {
+      val other = x.asInstanceOf[State]
+      position == other.position && w == other.w
     }
   }
 
-  case class InProgress(w: World, steps: Int, collectedLambdas: Int, stepsUnderwater: Int) extends State {
+  case class InProgress(w: World, steps: Int, collectedLambdas: Int, suw: Int) extends State {
     def status = "in progress"
+    override def stepsUnderwater = suw
     def step(c: Command): State = stepGame(this, c)
   }
 
   case class Lost(w: World, steps: Int, collectedLambdas: Int) extends State {
-    def stepsUnderwater = 0 // (xb to vp) is this really necessary?
     def status = "lost"
   }
 
   case class Aborted(w: World, steps: Int,  collectedLambdas: Int) extends State {
-    def stepsUnderwater = 0 // (xb to vp) is this really necessary?
     def status = "aborted"
     override def score = super.score + 25 * collectedLambdas
   }
 
   case class Won(w: World, steps: Int, collectedLambdas: Int) extends State {
-    def stepsUnderwater = 0 // (xb to vp) is this really necessary?
     def status = "won"
     override def score = super.score + 50 * collectedLambdas
   }

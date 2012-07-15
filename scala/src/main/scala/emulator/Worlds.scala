@@ -28,6 +28,8 @@ trait Worlds {
     def timeToNextFlood: Int
     def lambdaClosestToLift: Point
     def evolve: World
+    def isFinal: Boolean
+    def liftIsBlockedForever: Boolean
   }
 
   def mkWorld(lines: List[String], age: Int = 0): World
@@ -89,6 +91,19 @@ trait DumbWorlds {
       apply(lift) == Open
     }
 
+    def blocked(x: Int, y: Int) = this(x, y) == Wall || this(x, y) == Rock
+
+    def liftIsBlockedForever = {
+      lift.x == 0   && blocked(  1, lift.y) && (blocked(  1, lift.y-1) || blocked(  1, lift.y+1)) ||
+      lift.x == w-1 && blocked(w-2, lift.y) && (blocked(w-2, lift.y-1) || blocked(w-2, lift.y+1)) ||
+      lift.y == 0   && blocked(lift.x,   1) && (blocked(lift.x-1,   1) || blocked(lift.x+1,   1)) ||
+      lift.y == h-1 && blocked(lift.x, h-2) && (blocked(lift.x-1, h-2) || blocked(lift.x+1, h-2))
+    }
+
+    def nearLift = robot.distanceTo(lift) < 2
+
+    def isFinal = remainingLambdas == 0 && nearLift
+
     def distanceToLift(p: Point) = p.distanceTo(lift)
 
     def lambdaClosestToLift = tupleToPoint((lambdas map (p => (distanceToLift(p), p)) min)._2)
@@ -110,24 +125,41 @@ trait DumbWorlds {
       w
     }
 
+    private def rockDrops(x: Int, y: Int): World = {
+      update((x, y), Empty).putRock(x, y - 1)
+    }
+
+    private def rockRollsLeft(x: Int, y: Int): World = {
+      update((x, y), Empty).putRock(x - 1, y - 1)
+    }
+
+    private def rockRollsRight(x: Int, y: Int): World = {
+      update((x, y), Empty).putRock(x + 1, y - 1)
+    }
+
     def evolve: World = {
       var w = this
 
       for (x <- 0 to this.w; y <- 0 to this.h) {
-        if (this(x, y) == Rock && this(x, y - 1) == Empty) {
-          w = w.update((x, y), Empty)
-          w = w.putRock(x, y - 1)
-        } else if (this(x,y) == Rock && this(x, y - 1) == Rock && this(x + 1, y) == Empty && this(x + 1, y - 1) == Empty) {
-          w = w.update((x, y), Empty)
-          w = w.putRock(x + 1, y - 1)
-        } else if (this(x,y) == Rock && this(x, y - 1) == Rock &&
-          (this(x + 1, y) != Empty || this(x + 1, y - 1) != Empty) && this(x - 1, y) == Empty && this(x - 1, y - 1) == Empty) {
-          w = w.update((x, y), Empty)
-          w = w.putRock(x - 1, y - 1)
-        } else if (this(x,y) == Rock && this(x, y - 1) == Lambda && this(x + 1, y) == Empty && this(x + 1, y - 1) == Empty) {
-          w = w.update((x, y), Empty)
-          w = w.putRock(x + 1, y - 1)
-        } else if (this(x,y) == Closed && remainingLambdas == 0) {
+        val here       = this(x,     y)
+        val below      = this(x,     y - 1)
+        val onLeft     = this(x - 1, y)
+        val onRight    = this(x + 1, y)
+        val belowLeft  = this(x - 1, y - 1)
+        val belowRight = this(x + 1, y - 1)
+
+        if (here == Rock && below == Empty) { // rule 1
+          w = w.rockDrops(x, y)
+        } // the next condition will not hold if the above condition held
+        if (here == Rock && below == Rock && onRight == Empty && belowRight == Empty) { // rule 2
+          w = rockRollsRight(x, y)
+        }
+        if (here == Rock && below == Rock && (onRight != Empty || belowRight != Empty) && onLeft == Empty && belowLeft == Empty) { // rule 3
+          w = w.rockRollsLeft(x, y)
+        }
+        if (here == Rock && below == Lambda && onRight == Empty && belowRight == Empty) { // rule 4, rolling over lambda
+          w = w.rockRollsRight(x, y)
+        } else if (this(x,y) == Closed && remainingLambdas == 0) { // rule 5
           w = w.update((x, y), Open)
         }
       }
@@ -136,6 +168,22 @@ trait DumbWorlds {
     }
 
     override def toString = data.reverse.map(_.mkString).mkString("\n")
+    override def equals(o: Any) = o.isInstanceOf[World] && data == o.asInstanceOf[World].data
+
+//    def cutTop(left: Int, right: Int) = {
+//      // todo: fill the ceiling with wall blocks, to decrease the space for search
+//      this
+//    }
+//
+//    def tryCutTop: Option[World] = {
+//      if (lift.y < h-2) {
+//        for (left  <- (0 to w) find (x => this(x, h - 1) == Wall);
+//             right <- (left to w) find (x => this(x, h - 1) != Wall)
+//             if ((left to (right - 1)) forall (x => this(x, h-2) == Empty && this(x, h-3) == Empty))) {
+//               return Some(cutTop(left, right - 1))
+//             }
+//      } else None
+//    }
   }
 
   def mkWorld(lines: List[String], age: Int = 0) = { // (xb to vp) why explicit age?
