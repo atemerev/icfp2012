@@ -18,7 +18,7 @@ trait Pathfinder {
         if (x > 0) v = math.min(v, p(x - 1)(y))
         if (y > 0) v = math.min(v, p(x)(y - 1))
         if (x < w.w - 1) v = math.min(v, p(x + 1)(y))
-        if (y < w.h - 1 && w(x, y + 1) != Rock) v = math.min(v, p(x)(y + 1))
+        if (y < w.h - 1 && !w(x, y + 1).isRock) v = math.min(v, p(x)(y + 1))
         if (v + 1 != p(x)(y)) {
           p(x)(y) = v + 1
           somethingChanged = true

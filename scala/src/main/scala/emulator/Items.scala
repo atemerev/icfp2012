@@ -6,11 +6,12 @@ trait Items {
 
   sealed trait Item {
     def isPassable: Boolean
+    def isRock: Boolean
   }
 
   object Item {
     def unapply(c: Char): Option[Item] = c match {
-      case '*' => Some(Rock)
+      case '*' => Some(Rock(nut = true))
       case '.' => Some(Earth)
       case ' ' => Some(Empty)
       case '\\' => Some(Lambda)
@@ -18,47 +19,62 @@ trait Items {
       case 'R' => Some(Robot)
       case 'L' => Some(Closed)
       case 'O' => Some(Open)
+      case '@' => Some(Rock(nut = true))
       case _ => None
     }
   }
 
-  case object Rock extends Item {
+  case class Rock(nut: Boolean) extends Item {
     override def toString = "*"
     def isPassable = false
+    def isRock = true
   }
 
   case object Earth extends Item {
     override def toString = "."
     def isPassable = true
+    def isRock = false
   }
 
   case object Empty extends Item {
     override def toString = " "
     def isPassable = true
+    def isRock = false
   }
 
   case object Lambda extends Item {
     override def toString = "\\"
     def isPassable = true
+    def isRock = false
   }
 
   case object Wall extends Item {
     override def toString = "#"
     def isPassable = false
+    def isRock = false
   }
 
   case object Robot extends Item {
     override def toString = "R"
     def isPassable = false
+    def isRock = false
   }
 
   case object Closed extends Item {
     override def toString = "L"
     def isPassable = false
+    def isRock = false
   }
 
   case object Open extends Item {
     override def toString = "O"
     def isPassable = false
+    def isRock = false
+  }
+
+  case class Trampoline(name: Char) {
+    override def toString = name.toString
+    def isPassable = true
+    def isRock = false
   }
 }

@@ -92,7 +92,7 @@ trait DumbWorlds {
       apply(lift) == Open
     }
 
-    def blocked(x: Int, y: Int) = this(x, y) == Wall || this(x, y) == Rock
+    def blocked(x: Int, y: Int) = this(x, y) == Wall || this(x, y).isRock
 
     def liftIsBlockedForever = {
       lift.x == 0   && blocked(  1, lift.y) && (blocked(  1, lift.y-1) || blocked(  1, lift.y+1)) ||
@@ -127,22 +127,28 @@ trait DumbWorlds {
 
     def remainingLambdaPositions = lambdas map { case (x, y) => Point(x, y) } toList
 
-    private def putRock(p: Point): World = {
-      var w = update(p, Rock)
+    private def putRock(p: Point, item: Item): World = {
+      var w = update(p, item match {
+        case Rock(true) if this(p.x, p.y -1) != Empty => Lambda
+        case _ => item
+      })
       if (w(p.x, p.y - 1) == Robot) w = w.update((p.x, p.y - 1), Empty)
       w
     }
 
     private def rockDrops(x: Int, y: Int): World = {
-      update((x, y), Empty).putRock(x, y - 1)
+      val rock = this(x, y)
+      update((x, y), Empty).putRock((x, y - 1), rock)
     }
 
     private def rockRollsLeft(x: Int, y: Int): World = {
-      update((x, y), Empty).putRock(x - 1, y - 1)
+      val rock = this(x, y)
+      update((x, y), Empty).putRock((x - 1, y - 1), rock)
     }
 
     private def rockRollsRight(x: Int, y: Int): World = {
-      update((x, y), Empty).putRock(x + 1, y - 1)
+      val rock = this(x, y)
+      update((x, y), Empty).putRock((x + 1, y - 1), rock)
     }
 
     def evolve: World = {
@@ -156,16 +162,16 @@ trait DumbWorlds {
         val belowLeft  = this(x - 1, y - 1)
         val belowRight = this(x + 1, y - 1)
 
-        if (here == Rock && below == Empty) { // rule 1
+        if (here.isRock && below == Empty) { // rule 1
           w = w.rockDrops(x, y)
         } // the next condition will not hold if the above condition held
-        if (here == Rock && below == Rock && onRight == Empty && belowRight == Empty) { // rule 2
+        if (here.isRock && below.isRock && onRight == Empty && belowRight == Empty) { // rule 2
           w = rockRollsRight(x, y)
         }
-        if (here == Rock && below == Rock && (onRight != Empty || belowRight != Empty) && onLeft == Empty && belowLeft == Empty) { // rule 3
+        if (here.isRock && below.isRock && (onRight != Empty || belowRight != Empty) && onLeft == Empty && belowLeft == Empty) { // rule 3
           w = w.rockRollsLeft(x, y)
         }
-        if (here == Rock && below == Lambda && onRight == Empty && belowRight == Empty) { // rule 4, rolling over lambda
+        if (here.isRock && below == Lambda && onRight == Empty && belowRight == Empty) { // rule 4, rolling over lambda
           w = w.rockRollsRight(x, y)
         } else if (this(x,y) == Closed && remainingLambdas == 0) { // rule 5
           w = w.update((x, y), Open)

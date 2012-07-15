@@ -71,7 +71,7 @@ val deepWell = """
   "wall at 0,0" -> (() => { (Wall, smallWorld((0, 0))) }),
   "wall at 4,4" -> (() => { (Wall, smallWorld((4, 4))) }),
   "wall at 2,3" -> (() => { (Wall, smallWorld((2, 3))) }),
-  "Rock at 1,2" -> (() => { (Rock, smallWorld((1, 2))) }),
+  "Rock at 1,2" -> (() => { (Rock(nut = false), smallWorld((1, 2))) }),
   "Void at 2,1" -> (() => { (Empty,smallWorld((2, 1))) }),
 
   "rocks fall" -> (() => {

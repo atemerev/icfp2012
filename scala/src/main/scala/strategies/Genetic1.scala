@@ -58,7 +58,7 @@ trait Genetic1 {
           if (attempts >= maxLength) (g.w.robot, Abort)
           else {
             var possibleMoves = List(Right, Left, Up)
-            if (g.w(g.w.robot + (0, -1)) != Rock) possibleMoves :+= Down
+            if (!g.w(g.w.robot + (0, -1)).isRock) possibleMoves :+= Down
 
             val wannabe = pickRandom(possibleMoves:_*)
             g match {

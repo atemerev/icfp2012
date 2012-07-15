@@ -28,10 +28,11 @@ trait Games {
                 w = w.update(w.robot, Empty)
                 w = w.update(nextR, Robot)
                 wasLegalMove = true
-              case Left | Right if w(nextR) == Rock && w(afterR) == Empty =>
+              case Left | Right if w(nextR).isRock && w(afterR) == Empty =>
+                val old = w(nextR)
                 w = w.update(w.robot, Empty)
                 w = w.update(nextR, Robot)
-                w = w.update(afterR, Rock)
+                w = w.update(afterR, old)
                 wasLegalMove = true
               case Wait =>
                 wasLegalStep = true
