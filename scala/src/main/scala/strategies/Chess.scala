@@ -53,12 +53,12 @@ trait Chess {
     var progress = List[Int](g.commands.size)
     var i = 0
     var reachable = true
-    def isStuck = if (reachable && i > 10) {
+    def isStuck = if (i > 10) {
       val delta = progress(i) - progress(i - 10)
       // println(progress)
       delta < 15
     } else false
-    while (!isTimeout && !isStuck && !g.terminal && g.commands.size <= g.w.w * g.w.h) {
+    while (reachable && !isTimeout && !isStuck && !g.terminal && g.commands.size <= g.w.w * g.w.h) {
       if (trace) println(g.w)
       lambdaMaps = g.w.remainingLambdaPositions map (p => p -> mkDistMap(g.w, p)) toMap;
       reachable = g.w.remainingLambdas == 0 || (lambdaMaps.map(_._2(g.w.robot.x)(g.w.robot.y)).min < 1000)
