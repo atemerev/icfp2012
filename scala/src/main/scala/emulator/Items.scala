@@ -20,6 +20,15 @@ trait Items {
       case 'L' => Some(Closed)
       case 'O' => Some(Open)
       case '@' => Some(Rock(nut = true))
+      case 'A' => Some(Trampoline(name = c))
+      case 'B' => Some(Trampoline(name = c))
+      case 'C' => Some(Trampoline(name = c))
+      case 'D' => Some(Trampoline(name = c))
+      case 'E' => Some(Trampoline(name = c))
+      case 'F' => Some(Trampoline(name = c))
+      case 'G' => Some(Trampoline(name = c))
+      case 'H' => Some(Trampoline(name = c))
+      case 'I' => Some(Trampoline(name = c))
       case _ => None
     }
   }
@@ -72,7 +81,7 @@ trait Items {
     def isRock = false
   }
 
-  case class Trampoline(name: Char) {
+  case class Trampoline(name: Char) extends Item {
     override def toString = name.toString
     def isPassable = true
     def isRock = false

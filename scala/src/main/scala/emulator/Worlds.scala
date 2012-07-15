@@ -204,12 +204,27 @@ trait DumbWorlds {
   def mkWorld(lines0: List[String], age: Int = 0) = { // (xb to vp) why explicit age?
     val lines = lines0 filter (!_.startsWith(";;"))
     val mine: List[String] = lines dropWhile (_.isEmpty) takeWhile (!_.isEmpty)
-    val metadata: Map[String, String] = lines drop (mine.length + 1) takeWhile (!_.isEmpty) map (line => {
+    var metadata: Map[String, String] = lines drop (mine.length + 1) takeWhile (!_.isEmpty) map (line => {
       val Format = """^(\w+)\s+(.+?)\s*$""".r
       val Format(key, value) = line
       (key, value)
     }) toMap
-    val parsed = mine map (_ map (c => Item.unapply(c).get) toList) toList
+    val parsed = mine.zipWithIndex map { case (line, y) =>
+      line.zipWithIndex map { case (c, x) =>
+        if ('1' <= c && c <= '9') {
+          metadata += (c.toString -> "%s;%s".format(y, x))
+          Empty
+        } else {
+          try {
+            Item.unapply(c).get
+          } catch {
+            case ex =>
+              println("failed to parse: " + c)
+              throw ex
+          }
+        }
+      } toList
+    } toList
     val width = parsed map (_.length) max
     val padded = parsed map (_.padTo(width, Empty))
     World(padded.reverse, metadata, 0)
