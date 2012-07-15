@@ -7,6 +7,7 @@ trait Items {
   sealed trait Item {
     def isPassable: Boolean
     def isRock: Boolean
+    def isTrampoline: Boolean
   }
 
   object Item {
@@ -39,65 +40,76 @@ trait Items {
     override def toString = "*"
     def isPassable = false
     def isRock = true
+    def isTrampoline = false
   }
 
   case object Earth extends Item {
     override def toString = "."
     def isPassable = true
     def isRock = false
+    def isTrampoline = false
   }
 
   case object Empty extends Item {
     override def toString = " "
     def isPassable = true
     def isRock = false
+    def isTrampoline = false
   }
 
   case object Lambda extends Item {
     override def toString = "\\"
     def isPassable = true
     def isRock = false
+    def isTrampoline = false
   }
 
   case object Wall extends Item {
     override def toString = "#"
     def isPassable = false
     def isRock = false
+    def isTrampoline = false
   }
 
   case object Robot extends Item {
     override def toString = "R"
     def isPassable = false
     def isRock = false
+    def isTrampoline = false
   }
 
   case object Closed extends Item {
     override def toString = "L"
     def isPassable = false
     def isRock = false
+    def isTrampoline = false
   }
 
   case object Open extends Item {
     override def toString = "O"
     def isPassable = false
     def isRock = false
+    def isTrampoline = false
   }
 
   case class Trampoline(name: Char) extends Item {
     override def toString = (name + "").toString
     def isPassable = true
     def isRock = false
+    def isTrampoline = true
   }
 
   case object Beard extends Item {
     override def toString = "W"
     def isPassable = false
     def isRock = false
+    def isTrampoline = false
   }
 
   case object Razor extends Item {
     override def toString = "!"
     def isPassable = true
     def isRock = false
+    def isTrampoline = false
   }
 }

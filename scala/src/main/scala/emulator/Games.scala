@@ -38,6 +38,15 @@ trait Games {
                 wasLegalStep = true
               case _ => // do nothing
             }
+            if (g.w(nextR).isTrampoline) {
+              w = w.update(nextR, Empty)
+              // println(g.w.trampolines)
+              val target = g.w.trampolines(g.w(nextR).asInstanceOf[Trampoline])
+              w = w.update(target, Robot)
+              val alsoRemove = g.w.trampolines.collect{ case (tramp1, target1) if target == target1 => tramp1 }
+              val ptsOfAlsoRemove = alsoRemove flatMap (tramp => g.w.trampolinePositions filter (pt => g.w(pt) == tramp))
+              ptsOfAlsoRemove foreach (ptTramp => w = w.update(ptTramp, Empty))
+            }
             wasLegalStep |= wasLegalMove
             val stepsUnderwater1 = if (g.w.isUnderwater) g.stepsUnderwater + 1 else 0
             if (stepsUnderwater1 >= g.w.waterproof) w = w.update(w.robot, Empty)

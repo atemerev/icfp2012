@@ -33,6 +33,7 @@ trait Worlds {
     def finalCommand: Command
     def liftIsBlockedForever: Boolean
     def trampolines: Map[Trampoline, Point]
+    def trampolinePositions: List[Point]
   }
 
   def mkWorld(lines: List[String], age: Int = 0): World
@@ -129,6 +130,8 @@ trait DumbWorlds {
 
     def remainingLambdaPositions = lambdas map { case (x, y) => Point(x, y) } toList
 
+    def trampolinePositions = points filter (tup => this(tup).isTrampoline) map { case (x, y) => Point(x, y) } toList
+
     private def putRock(p: Point, item: Item): World = {
       var w = update(p, item match {
         case Rock(true) if this(p.x, p.y -1) != Empty => Lambda
@@ -211,7 +214,7 @@ trait DumbWorlds {
       if (line startsWith "Trampoline") {
         val Format = """^Trampoline (.) targets (.)$""".r
         val Format(name, destination) = line
-        trampolines += (destination(0) -> name(0))
+        trampolines += (name(0) -> destination(0))
         ("", "")
       } else {
         val Format = """^(\w+)\s+(.+?)\s*$""".r
@@ -223,7 +226,8 @@ trait DumbWorlds {
     val parsed = mine.zipWithIndex map { case (line, y) =>
       line.zipWithIndex map { case (c, x) =>
         if ('1' <= c && c <= '9') {
-          targets += (Trampoline(trampolines(c)) -> (x, y))
+          val sources = trampolines collect { case (name, destination) if destination == c => Trampoline(name) }
+          sources foreach (tramp => targets += tramp -> (x, y))
           Empty
         } else {
           try {
