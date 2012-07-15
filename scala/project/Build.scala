@@ -168,20 +168,21 @@ object ProjectBuild extends Build {
           val algos = List("gen1", "ast", "chess")
           def usage = {
             println("incoming: tourney " + (args mkString " "))
-            println("usage: tourney <algo>")
+            println("usage: tourney <algo> [<timeout in seconds (per map)>]")
             println("where <algo> is one of:")
             algos foreach (algo => println("* " + algo))
           }
-          if (args.length != 1) usage
+          if (args.length != 1 && args.length != 2) usage
           else {
             val algo = args(0)
+            val timeout = if (args.length == 1) "10" else args(1)
             if (!(algos contains algo)) usage
             else {
               val logger = ConsoleLogger()
               Run.executeTrapExit({
                 Run.run("icfp.Main",
                         classpath map (_.data),
-                        Seq("tourney", algo),
+                        Seq("tourney", algo, timeout),
                         logger)(runner)
               }, logger)
             }
