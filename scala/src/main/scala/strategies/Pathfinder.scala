@@ -10,14 +10,19 @@ trait Pathfinder {
   def mkDistMap(w: World, dest: Point): DistanceMap = {
     val p: DistanceMap = Array.fill(w.w, w.h)(Int.MaxValue)
     p(dest.x)(dest.y) = 0
-    for (i <- 0 to math.max(w.w, w.h)) {
+    var somethingChanged = true
+    while (somethingChanged) {
+      somethingChanged = false
       for (x <- 0 until w.w; y <- 0 until w.h if w(x, y) == Empty || w(x, y) == Earth || w(x, y) == Lambda || w(x, y) == Robot) {
         var v = p(x)(y) - 1
         if (x > 0) v = math.min(v, p(x - 1)(y))
-        if (y > 0 && w(x, y + 1) != Rock) v = math.min(v, p(x)(y - 1))
+        if (y > 0) v = math.min(v, p(x)(y - 1))
         if (x < w.w - 1) v = math.min(v, p(x + 1)(y))
-        if (y < w.h - 1) v = math.min(v, p(x)(y + 1))
-        p(x)(y) = v + 1
+        if (y < w.h - 1 && w(x, y + 1) != Rock) v = math.min(v, p(x)(y + 1))
+        if (v + 1 != p(x)(y)) {
+          p(x)(y) = v + 1
+          somethingChanged = true
+        }
       }
     }
     p

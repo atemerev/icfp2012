@@ -24,7 +24,7 @@ trait Chess {
           state.w.remainingLambdaPositions map (p => lambdaMaps(p)(state.w.robot.x)(state.w.robot.y)) min
         }
         val distToLift = if (state.w.liftIsOpen) liftMap(state.w.robot.x)(state.w.robot.y) else 1000
-        lambdas * 100 + open * 1000 + (2000 / distToLift) * open - distToLambda * 10
+        lambdas * 500 + open * 1000 + (2000 / distToLift) * open - distToLambda * 10
       }
     }
 
@@ -56,14 +56,16 @@ trait Chess {
       liftMap = mkDistMap(g.w, g.w.lift)
       val leaves = mkTree(g).leaves
       if (trace) {
-//        leaves.sortBy(l => -score(l.state)).foreach(l => println("%s: %s".format(l.commands.mkString, score(l.state))))
+        leaves.sortBy(l => -score(l.state)).foreach(l => println("%s: %s".format(l.commands.mkString, score(l.state))))
       }
       val (aborts, games) = leaves partition (_.aborted)
       val bestGame = games.maxBy(l => score(l.state))
       val bestAbort = aborts.maxBy(l => score(l.state))
       bestAborts += (bestAbort.state -> score(bestAbort.state))
       g = bestGame.state
-//      for (lm <- lambdaMaps) {
+ //     val nearest = lambdaMaps(Point(3, 13))
+ //     println(nearest.transpose.map(x => x.map(i => if (i > 1000) "##" else "%2d".format(i)).mkString(" ")).reverse.mkString("\n"))
+      //      for (lm <- lambdaMaps) {
 //        println(lm._2.transpose.map(x => x.map(i => if (i > 1000) "#" else "%1d".format(i)).mkString("")).reverse.mkString("\n"))
 //        println()
 //      }
