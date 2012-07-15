@@ -1,6 +1,8 @@
 package icfp
 
-object Main extends App with DumbEmulator with Strategies with emulator.Cli {
+import strategies.AStarSearch
+
+object Main extends App with DumbEmulator with Strategies with AStarSearch with emulator.Cli {
   def loadLines(url: String): List[String] =
     // (xb) would also be great to automatically download samples from the server
     scala.io.Source.fromFile(url).getLines().toList
@@ -11,15 +13,20 @@ object Main extends App with DumbEmulator with Strategies with emulator.Cli {
 
   val cmd = args(0)
   val stuff = args.tail
+  def readGame: State = {
+    if (stuff.length == 0) mkGame(mkWorld(loadLinesStdin)) else
+                           mkGame(mkWorld(loadLines(stuff(0))))
+  }
+
   cmd match {
     case "r" =>
       if (stuff.length != 2) { println("usage: r <url of map> <commands>"); sys.exit(-1) }
-      val game = mkGame(mkWorld(loadLines(stuff(0))))
+      val game = readGame
       val commands = mkCommands(stuff(1))
       runNonInteractive(game, commands)
     case "i" =>
       if (stuff.length != 1) { println("usage: i <url of map>"); sys.exit(-1) }
-      val game = mkGame(mkWorld(loadLines(stuff(0))))
+      val game = readGame
       val commands = runInteractive(game)
       println(commands.mkString)
     case "t" =>
@@ -30,10 +37,16 @@ object Main extends App with DumbEmulator with Strategies with emulator.Cli {
       println(if (report.isEmpty) "Passed" else report)
       sys.exit(report.length)
     case "gen1" =>
-      if (stuff.length > 1) { println("usage: gen1 [map]"); sys.exit(-1) }
-      val game = if (stuff.length == 0) mkGame(mkWorld(loadLinesStdin)) else mkGame(mkWorld(loadLines(stuff(0))))
+      if (stuff.length > 2) { println("usage: gen1 [map]"); sys.exit(-1) }
+      val game = readGame
       val trace = stuff.length == 1
       val commands = genetic1(game, trace)
+      println(commands.mkString)
+    case "a*" =>
+      if (stuff.length > 2) { println("Usage: ast [map]" + stuff); sys.exit(-1) }
+      val game = readGame
+      val trace = stuff.length == 1
+      val commands = search(game, trace)
       println(commands.mkString)
     case "p" =>
       val game = mkGame(mkWorld(
