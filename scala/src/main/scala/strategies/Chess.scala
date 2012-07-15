@@ -59,7 +59,7 @@ trait Chess {
       liftMap = mkDistMap(g.w, g.w.lift)
       val leaves = mkTree(g).leaves
       if (trace) {
-        // leaves.sortBy(l => -score(l.state)).foreach(l => println("%s: %s%n%s".format(l.commands.mkString, score(l.state), l.state.commands mkString)))
+        leaves.sortBy(l => -score(l.state)).foreach(l => println("%s: %s%n%s".format(l.commands.mkString, score(l.state), l.state.commands mkString)))
       }
       val (aborts, games) = leaves partition (_.aborted)
       val bestGame = games.maxBy(l => score(l.state))
