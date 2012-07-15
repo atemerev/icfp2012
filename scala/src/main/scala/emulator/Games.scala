@@ -36,6 +36,17 @@ trait Games {
                 wasLegalMove = true
               case Wait =>
                 wasLegalStep = true
+              case Shave if w.razors > 0 =>
+                w = w.updateMetadata(w.metadata + ("Razors" -> (w.razors - 1).toString))
+                if (w(w.robot.x + 0, w.robot.y + 1) == Beard) w = w.update((w.robot.x + 0, w.robot.y + 1), Empty)
+                if (w(w.robot.x + 0, w.robot.y - 1) == Beard) w = w.update((w.robot.x + 0, w.robot.y - 1), Empty)
+                if (w(w.robot.x + 1, w.robot.y + 0) == Beard) w = w.update((w.robot.x + 1, w.robot.y + 0), Empty)
+                if (w(w.robot.x + 1, w.robot.y + 1) == Beard) w = w.update((w.robot.x + 1, w.robot.y + 1), Empty)
+                if (w(w.robot.x + 1, w.robot.y - 1) == Beard) w = w.update((w.robot.x + 1, w.robot.y - 1), Empty)
+                if (w(w.robot.x - 1, w.robot.y + 0) == Beard) w = w.update((w.robot.x - 1, w.robot.y + 0), Empty)
+                if (w(w.robot.x - 1, w.robot.y + 1) == Beard) w = w.update((w.robot.x - 1, w.robot.y + 1), Empty)
+                if (w(w.robot.x - 1, w.robot.y - 1) == Beard) w = w.update((w.robot.x - 1, w.robot.y - 1), Empty)
+                wasLegalStep = true
               case _ => // do nothing
             }
             if (g.w(nextR).isTrampoline) {
@@ -46,6 +57,9 @@ trait Games {
               val alsoRemove = g.w.trampolines.collect{ case (tramp1, target1) if target == target1 => tramp1 }
               val ptsOfAlsoRemove = alsoRemove flatMap (tramp => g.w.trampolinePositions filter (pt => g.w(pt) == tramp))
               ptsOfAlsoRemove foreach (ptTramp => w = w.update(ptTramp, Empty))
+            }
+            if (g.w(nextR) == Razor) {
+              w = w.updateMetadata(w.metadata + ("Razors" -> (w.razors + 1).toString))
             }
             wasLegalStep |= wasLegalMove
             val stepsUnderwater1 = if (g.w.isUnderwater) g.stepsUnderwater + 1 else 0

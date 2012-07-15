@@ -16,6 +16,7 @@ trait Commands {
       case 'D' => Some(Down)
       case 'W' => Some(Wait)
       case 'A' => Some(Abort)
+      case 'S' => Some(Shave)
       case _ => None
     }
   }
@@ -48,6 +49,11 @@ trait Commands {
   case object Abort extends Command {
     def dir = (0, 0)
     override def toString = "A"
+  }
+
+  case object Shave extends Command {
+    def dir = (0, 0)
+    override def toString = "S"
   }
 
   type Commands = List[Command]

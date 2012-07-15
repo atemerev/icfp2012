@@ -24,6 +24,7 @@ trait Worlds {
     def water: Int
     def flooding: Int
     def waterproof: Int
+    def razors: Int
     def heightOverWater = robot.y - water
     def isUnderwater: Boolean = heightOverWater < 0
     def timeToNextFlood: Int
@@ -34,6 +35,8 @@ trait Worlds {
     def liftIsBlockedForever: Boolean
     def trampolines: Map[Trampoline, Point]
     def trampolinePositions: List[Point]
+    def metadata: Map[String, String]
+    def updateMetadata(metadata: Map[String, String]): World
   }
 
   def mkWorld(lines: List[String], age: Int = 0): World
@@ -42,7 +45,7 @@ trait Worlds {
 trait DumbWorlds {
   self: Commands with Games with Items with Points with States with Worlds =>
 
-  case class World(data: List[List[Item]], trampolines: Map[Trampoline, Point], metadata: Map[String, String], age: Int, collectedLambdas: Int, override val remainingLambdas: Int) extends WorldApi {
+  case class World(data: List[List[Item]], trampolines: Map[Trampoline, Point], override val metadata: Map[String, String], age: Int, collectedLambdas: Int, override val remainingLambdas: Int) extends WorldApi {
     def apply(p: Point) = try {
       if (data.isDefinedAt(p.y) &&
           data(p.y).isDefinedAt(p.x))
@@ -71,6 +74,8 @@ trait DumbWorlds {
       }, trampolines, metadata, age, collectedLambdas + lambdasCollectedNow, remainingLambdas - lambdasCollectedNow)
     }
 
+    def updateMetadata(metadata: Map[String, String]): World = World(data, trampolines, metadata, age, collectedLambdas, remainingLambdas)
+
     def h = data.length
     def w = data(0).length
 
@@ -79,6 +84,8 @@ trait DumbWorlds {
     def flooding = metadata.getOrElse("Flooding", "0").toInt
     def waterproof = metadata.getOrElse("Waterproof", "10").toInt
     def timeToNextFlood = if (flooding == 0) Int.MaxValue else (flooding - age % flooding)
+    def razors = metadata.getOrElse("Razors", "0").toInt
+    def growth = metadata.getOrElse("Growth", "25").toInt
 
     def isA(item: Item)(p: (Int, Int)) = this(p) == item
     def oneOf(items: Item*)(p: (Int, Int)) = items exists (this(p)==_)
@@ -158,7 +165,9 @@ trait DumbWorlds {
 
     def evolve: World = {
       var w = this
-
+      w = World(data, trampolines, metadata, age + 1, collectedLambdas, remainingLambdas)
+      val growBeardNow = (growth != 0 && age != 0 && (age % growth == 0))
+      val floodNow = flooding != 0 && age != 0 && (age % flooding == 0)
       for (x <- 0 to this.w; y <- 0 to this.h) {
         val here       = this(x,     y)
         val below      = this(x,     y - 1)
@@ -178,15 +187,24 @@ trait DumbWorlds {
         }
         if (here.isRock && below == Lambda && onRight == Empty && belowRight == Empty) { // rule 4, rolling over lambda
           w = w.rockRollsRight(x, y)
-        } else if (this(x,y) == Closed && remainingLambdas == 0) { // rule 5
+        } else if (here == Closed && remainingLambdas == 0) { // rule 5
           w = w.update((x, y), Open)
+        } else if (here == Beard && growBeardNow) {
+          if (this(x + 0, y + 1) == Empty) w = w.update((x + 0, y + 1), Beard)
+          if (this(x + 0, y - 1) == Empty) w = w.update((x + 0, y - 1), Beard)
+          if (this(x + 1, y + 0) == Empty) w = w.update((x + 1, y + 0), Beard)
+          if (this(x + 1, y + 1) == Empty) w = w.update((x + 1, y + 1), Beard)
+          if (this(x + 1, y - 1) == Empty) w = w.update((x + 1, y - 1), Beard)
+          if (this(x - 1, y + 0) == Empty) w = w.update((x - 1, y + 0), Beard)
+          if (this(x - 1, y + 1) == Empty) w = w.update((x - 1, y + 1), Beard)
+          if (this(x - 1, y - 1) == Empty) w = w.update((x - 1, y - 1), Beard)
         }
       }
-      if (flooding != 0 && age != 0 && (age % flooding == 0)) w = w.water_=(water + 1)
+      if (floodNow) w = w.water_=(water + 1)
       w
     }
 
-    override def toString = data.reverse.map(_.mkString).mkString("\n")
+    override def toString = data.reverse.map(_.mkString).mkString("\n") + (if (razors == 0) "" else " (%d razor%s)".format(razors, if (razors == 1) "" else "s"))
     override def hashCode = data.hashCode
     override def equals(o: Any) = o.isInstanceOf[World] && data == o.asInstanceOf[World].data
 

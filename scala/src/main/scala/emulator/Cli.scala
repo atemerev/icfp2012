@@ -20,11 +20,12 @@ trait Cli {
       render(game)
       val c = jline.Terminal.getTerminal.readVirtualKey(System.in)
       val nextCommand = c match {
-        case 'w' => Up
-        case 's' => Down
-        case 'a' => Left
-        case 'd' => Right
+        case 'w' | 16 => Up
+        case 's' | 14 => Down
+        case 'a' | 2 => Left
+        case 'd' | 6 => Right
         case ' ' => Abort
+        case 33 => Shave // exclamation mark: Shift+1
         case _ => Wait
       }
       val nextState = game.step(nextCommand)
