@@ -18,7 +18,8 @@ object Main extends App with DumbEmulator with Strategies with emulator.Cli {
 
   cmd match {
     case "r" =>
-      if (stuff.length != 2) { println("usage: r <url of map> <commands>"); sys.exit(-1) }
+      if (stuff.length < 2) { println("usage: r <url of map> <commands>"); sys.exit(-1) }
+      Trace.isEnabled = stuff.length == 3
       val game = readGame
       val commands = mkCommands(stuff(1))
       runNonInteractive(game, commands)

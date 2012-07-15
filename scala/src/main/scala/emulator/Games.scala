@@ -77,13 +77,13 @@ trait Games {
     }
 
   def playGame(game: State, commands: Commands): State =
-    commands.foldLeft(game)((s, c) =>
+    commands.zipWithIndex.foldLeft(game)((s, c) =>
       s match {
         case g: InProgress =>
-          // println("Step: %s".format(c))
-          // println(g.w)
-          // println()
-          g.step(c)
+          if (Trace.isEnabled) println("Step#%d: %s".format((c._2 + 1), c._1))
+          if (Trace.isEnabled) println(g.w)
+          if (Trace.isEnabled) println()
+          g.step(c._1)
         case _ =>
           s
       }
