@@ -24,7 +24,7 @@ trait Chess {
           state.w.remainingLambdaPositions map (p => lambdaMaps(p)(state.w.robot.x)(state.w.robot.y)) min
         }
         val distToLift = if (state.w.liftIsOpen) liftMap(state.w.robot.x)(state.w.robot.y) else 1000
-        lambdas * 100 + open * 1000 + (2000 / distToLift) * open - distToLambda * 10
+        lambdas * 300 + open * 1000 + (2000 / distToLift) * open - distToLambda * 10
       }
     }
 
@@ -52,14 +52,18 @@ trait Chess {
     var g = game
     var progress = List[Int](g.commands.size)
     var i = 0
-    def isStuck = if (i > 10) progress(i) - progress(i - 10) < 10 else false
+    def isStuck = if (i > 10) {
+      val delta = progress(i) - progress(i - 10)
+      // println(progress)
+      delta < 15
+    } else false
     while (!isTimeout && !isStuck && !g.terminal && g.commands.size <= g.w.w * g.w.h) {
       if (trace) println(g.w)
       lambdaMaps = g.w.remainingLambdaPositions map (p => p -> mkDistMap(g.w, p)) toMap;
       liftMap = mkDistMap(g.w, g.w.lift)
       val leaves = mkTree(g).leaves
       if (trace) {
-        leaves.sortBy(l => -score(l.state)).foreach(l => println("%s: %s%n%s".format(l.commands.mkString, score(l.state), l.state.commands mkString)))
+        // leaves.sortBy(l => -score(l.state)).foreach(l => println("%s: %s%n%s".format(l.commands.mkString, score(l.state), l.state.commands mkString)))
       }
       val (aborts, games) = leaves partition (_.aborted)
       val bestGame = games.maxBy(l => score(l.state))
