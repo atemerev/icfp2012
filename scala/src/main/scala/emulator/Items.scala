@@ -11,7 +11,7 @@ trait Items {
 
   object Item {
     def unapply(c: Char): Option[Item] = c match {
-      case '*' => Some(Rock(nut = true))
+      case '*' => Some(Rock(nut = false)) // at, pls take a look; I believe it was a bug
       case '.' => Some(Earth)
       case ' ' => Some(Empty)
       case '\\' => Some(Lambda)

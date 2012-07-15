@@ -46,7 +46,7 @@ object Main extends App with DumbEmulator with Strategies with emulator.Cli {
       val game = readGame
       val trace = stuff.length == 2
       Trace.isEnabled = true
-      val commands = search(game, 150, trace)
+      val commands = search(game, 150)
       println(commands.mkString)
     case "chess" =>
       if (stuff.length != 1 && stuff.length != 2) { println("Usage: chess <url of map> [<trace>]"); sys.exit(-1) }
@@ -100,7 +100,7 @@ object Main extends App with DumbEmulator with Strategies with emulator.Cli {
             Trace.isEnabled = false
             val commands = algo match {
               case "gen1" => genetic1(game, timeout, false)
-              case "ast" => search(game, timeout, false)
+              case "ast" => search(game, timeout)
               case "chess" => chess(game, timeout, false)
             }
             val finalState = playGame(game, commands)
