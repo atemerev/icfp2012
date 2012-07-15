@@ -45,7 +45,7 @@ trait Games {
 
             val nextLambdas = g.collectedLambdas + g.w.remainingLambdas - w.remainingLambdas
             if (!wasLegalStep) None else Some(
-            if (w.isFinal)          Won(w, g.commands :+ c, nextLambdas)  else
+            if (w.isFinal)          Won(w, g.commands :+ c :+ w.finalCommand, nextLambdas)  else
             if (w.robot == Invalid) Lost(w, g.commands :+ c, nextLambdas) else
                                     InProgress(w, g.commands :+ c, nextLambdas, stepsUnderwater1))
         }

@@ -5,9 +5,10 @@ trait Chess {
 
   self: emulator.Commands with emulator.Games with emulator.Items with emulator.Points with emulator.States with emulator.Worlds with Pathfinder =>
 
-  val MAX_LEVEL = 6
+  val MAX_LEVEL = 4
 
-  var maps = Map[Point, DistanceMap]()
+  var lambdaMaps = Map[Point, DistanceMap]()
+  var liftMap: DistanceMap = null
 
   def score(state: State): Int = {
     // limited path to nearest lambda
@@ -19,9 +20,9 @@ trait Chess {
       val open = if (state.w.liftIsOpen) 1 else 0
 //      val distToLambda = if (state.w.liftIsOpen) 0 else state.w.remainingLambdaPositions.map(p => p.distanceTo(state.w.robot)).min
       val distToLambda = if (state.w.liftIsOpen) 0 else {
-        state.w.remainingLambdaPositions map (p => maps(p)(state.w.robot.x)(state.w.robot.y)) min
+        state.w.remainingLambdaPositions map (p => lambdaMaps(p)(state.w.robot.x)(state.w.robot.y)) min
       }
-      val distToLift = state.w.robot.distanceTo(state.w.lift)
+      val distToLift = if (state.w.liftIsOpen) liftMap(state.w.robot.x)(state.w.robot.y) else 1000
       lambdas * 100 + open * 1000 + (2000 / distToLift) * open - distToLambda * 10
     }
   }
@@ -50,10 +51,11 @@ trait Chess {
     var g = game
     while (!g.terminal && g.commands.size <= g.w.w * g.w.h) {
       if (trace) println(g.w)
-      maps = g.w.remainingLambdaPositions map (p => p -> mkDistMap(g.w, p)) toMap
+      lambdaMaps = g.w.remainingLambdaPositions map (p => p -> mkDistMap(g.w, p)) toMap;
+      liftMap = mkDistMap(g.w, g.w.lift)
       val leaves = mkTree(g).leaves
       if (trace) {
-        //leaves.foreach(l => println("%s: %s".format(l.commands.mkString, score(l.state))))
+//        leaves.sortBy(l => -score(l.state)).foreach(l => println("%s: %s".format(l.commands.mkString, score(l.state))))
       }
       val maxBy = leaves.maxBy(l => score(l.state))
       g = maxBy.state

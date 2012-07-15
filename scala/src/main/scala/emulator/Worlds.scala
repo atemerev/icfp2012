@@ -29,6 +29,7 @@ trait Worlds {
     def lambdaClosestToLift: Point
     def evolve: World
     def isFinal: Boolean
+    def finalCommand: Command
     def liftIsBlockedForever: Boolean
   }
 
@@ -103,6 +104,13 @@ trait DumbWorlds {
     def nearLift = robot.distanceTo(lift) < 2
 
     def isFinal = remainingLambdas == 0 && nearLift
+
+    def finalCommand = if (!isFinal || robot == Invalid || !liftIsOpen) null else {
+      if (lift == Point(robot.x, robot.y + 1)) Up else
+      if (lift == Point(robot.x, robot.y - 1)) Down else
+      if (lift == Point(robot.x - 1, robot.y)) Left else
+      if (lift == Point(robot.x + 1, robot.y)) Right else ???
+    }
 
     def distanceToLift(p: Point) = p.distanceTo(lift)
 
