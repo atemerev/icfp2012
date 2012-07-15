@@ -38,18 +38,21 @@ object Main extends App with DumbEmulator with Strategies with emulator.Cli {
       if (stuff.length != 1 && stuff.length != 2) { println("usage: gen1 <url of map> [<trace>]"); sys.exit(-1) }
       val game = readGame
       val trace = stuff.length == 2
+      Trace.isEnabled = true
       val commands = genetic1(game, 150, trace)
       println(commands.mkString)
     case "ast" => // renamed from a* to be consistent with sbt
       if (stuff.length != 1 && stuff.length != 2) { println("Usage: ast <url of map> [<trace>]"); sys.exit(-1) }
       val game = readGame
       val trace = stuff.length == 2
+      Trace.isEnabled = true
       val commands = search(game, 150, trace)
       println(commands.mkString)
     case "chess" =>
       if (stuff.length != 1 && stuff.length != 2) { println("Usage: chess <url of map> [<trace>]"); sys.exit(-1) }
       val game = readGame
       val trace = stuff.length == 2
+      Trace.isEnabled = true
       val commands = chess(game, 150, trace)
       println(commands.mkString)
     case "p" =>
@@ -94,6 +97,7 @@ object Main extends App with DumbEmulator with Strategies with emulator.Cli {
             val lines = loadLines(test.getCanonicalPath)
             val hiscore = if (lines(0).startsWith(";;")) lines(0).substring(2).trim else "???"
             val game = mkGame(mkWorld(lines))
+            Trace.isEnabled = false
             val commands = algo match {
               case "gen1" => genetic1(game, timeout, false)
               case "ast" => search(game, timeout, false)

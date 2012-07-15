@@ -44,7 +44,7 @@ trait AStarSearch {
   def eval(node: Vertex[State, Command]): Double = if (node.data.mayGetToLift) node.data.w.remainingLambdas else SOME_STUPID_BIG_NUMBER * 2
 
   def search(state: State, timeout: Int, trace: Boolean): Commands = {
-    println(state.w.lift)
+    if (trace) { println(state.w.lift) }
     if (trace) println("Running " + state)
     val withLambdas = collectLambdas(state, trace)
     val atLift = getToLift(withLambdas._2)
@@ -52,7 +52,7 @@ trait AStarSearch {
   }
 
   val theEnd = (state: State) => {
-    if (state.w.robot.distanceTo(state.w.lift) < 3) println("Is " + state + " final?!?!")
+    if (Trace.isEnabled && (state.w.robot.distanceTo(state.w.lift) < 3)) println("Is " + state + " final?!?!")
     state.status == "won"
   }
 
@@ -69,13 +69,15 @@ trait AStarSearch {
 
     try {
       val result = astar.search(graph, vertex(start), isLastNode, eval)
-      println(result)
+      if (trace) println(result)
       val chain = result filter (null!=) map (_.value)
       (chain, result.last.v2.data)
     } catch {
       case x =>{
-        println("oops, " + x)
-        x.printStackTrace()
+        if (trace) {
+          println("oops, " + x)
+          x.printStackTrace()
+        }
         (self.mkCommands("A"), start)
       } // actually, have to get max
     }

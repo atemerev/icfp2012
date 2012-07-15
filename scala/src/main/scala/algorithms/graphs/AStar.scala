@@ -2,7 +2,7 @@ package icfp.algorithms.graphs
 
 import collection.mutable.{HashMap, HashSet}
 import icfp.algorithms.core.{Edge, FibonacciHeap, Graph, Vertex}
-
+import icfp.Trace
 
 // source: http://code.google.com/p/scalgorithm
 
@@ -23,10 +23,10 @@ class AStar[A,B](trace: Boolean) {
 
   def search(graph:Graph[A,B],s:Vertex[A,B],goal:(Vertex[A,B]) => Boolean,h:(Vertex[A,B]) => Double): List[Edge[A,B]] = {
     val N = searchTechicalities(graph, s, goal, h)
-    println(N)
+    if (Trace.isEnabled) println(N)
     N._3.reverse map (_._2)
   }
-  
+
   def searchTechicalities(graph:Graph[A,B],s:Vertex[A,B],goal:(Vertex[A,B]) => Boolean,h:(Vertex[A,B]) => Double): searchNodeClass = {
     assume(graph.vertices.contains(s))
     s.tag = (0,Nil)
@@ -41,11 +41,11 @@ class AStar[A,B](trace: Boolean) {
       val p = N._3.head
       val u = p._1
       Qmap -= u
-      println("trying" + p)
+      if (Trace.isEnabled) println("trying" + p)
       if(goal(u)){
         return  N
       }
-      //no point expanding u if it has already been expanded on some other route ... 
+      //no point expanding u if it has already been expanded on some other route ...
       if(!expanded.contains(u)){
         expanded += u
         val g = _g(graph,u,N._2)_
@@ -66,7 +66,7 @@ class AStar[A,B](trace: Boolean) {
               Qmap += v -> Nv
             }
           }else{
-            println("" + Nv + ": NEVER SEEN BEFORE?")
+            if (Trace.isEnabled) println("" + Nv + ": NEVER SEEN BEFORE?")
             Q += Nv
             Qmap += v -> Nv
           }
