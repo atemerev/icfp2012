@@ -31,7 +31,7 @@ trait Genetic1 {
         val distanceToLift = mkDistMap(final_state.w, final_state.w.lift)(final_state.w.robot.x)(final_state.w.robot.y)
         if (distanceToLift == Int.MaxValue) false
         else {
-          unmodded += final_state.collectedLambdas*50 - distanceToLift
+          unmodded += final_state.w.collectedLambdas*50 - distanceToLift
           true
         }
       } else false

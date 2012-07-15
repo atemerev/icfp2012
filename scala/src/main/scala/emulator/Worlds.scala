@@ -15,6 +15,7 @@ trait Worlds {
     def update(point: Point, item: Item): World
     def h: Int
     def w: Int
+    def collectedLambdas: Int
     def remainingLambdas: Int
     def remainingLambdaPositions: List[Point]
     def robot: Point
@@ -40,7 +41,7 @@ trait Worlds {
 trait DumbWorlds {
   self: Commands with Games with Items with Points with States with Worlds =>
 
-  case class World(data: List[List[Item]], trampolines: Map[Trampoline, Point], metadata: Map[String, String], age: Int) extends WorldApi {
+  case class World(data: List[List[Item]], trampolines: Map[Trampoline, Point], metadata: Map[String, String], age: Int, collectedLambdas: Int, override val remainingLambdas: Int) extends WorldApi {
     def apply(p: Point) = try {
       if (data.isDefinedAt(p.y) &&
           data(p.y).isDefinedAt(p.x))
@@ -58,20 +59,22 @@ trait DumbWorlds {
       newWorld
     }
 
-    def update(p: Point, item: Item) =
+    def update(p: Point, item: Item) = {
+      val lambdasCollectedNow = if (this(p.x, p.y) == Lambda) 1 else 0
       World(data.zipWithIndex map {
         case (line, y) =>
           line.zipWithIndex map {
             case (_, x) if x == p.x && y == p.y => item
             case (item, _) => item
           }
-      }, trampolines, metadata, age)
+      }, trampolines, metadata, age, collectedLambdas + lambdasCollectedNow, remainingLambdas - lambdasCollectedNow)
+    }
 
     def h = data.length
     def w = data(0).length
 
     def water = metadata.getOrElse("Water", "0").toInt
-    def water_=(value: Int): World = World(data, trampolines, metadata + ("Water" -> value.toString), age)
+    def water_=(value: Int): World = World(data, trampolines, metadata + ("Water" -> value.toString), age, collectedLambdas, remainingLambdas)
     def flooding = metadata.getOrElse("Flooding", "0").toInt
     def waterproof = metadata.getOrElse("Waterproof", "10").toInt
     def timeToNextFlood = if (flooding == 0) Int.MaxValue else (flooding - age % flooding)
@@ -123,8 +126,6 @@ trait DumbWorlds {
       if (robotAt == Invalid) for (p <- find(Robot)) robotAt = p
       robotAt
     }
-
-    def remainingLambdas = lambdas size
 
     def remainingLambdaPositions = lambdas map { case (x, y) => Point(x, y) } toList
 
@@ -238,6 +239,6 @@ trait DumbWorlds {
     for ((t, Point(x, y)) <- targets.toList) targets(t) = Point(x, parsed.length - y - 1)
     val width = parsed map (_.length) max
     val padded = parsed map (_.padTo(width, Empty))
-    World(padded.reverse, targets.toMap, metadata, 0)
+    World(padded.reverse, targets.toMap, metadata, 0, 0, padded.flatten.collect{case Rock(true) => 1; case Lambda => 1}.length)
   }
 }

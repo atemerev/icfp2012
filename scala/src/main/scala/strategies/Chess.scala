@@ -17,7 +17,7 @@ trait Chess {
       // lift is open? then distance to lift
       // robot is no more :(
       if (state.w.robot == Invalid) Int.MinValue else {
-        val lambdas = state.collectedLambdas
+        val lambdas = state.w.collectedLambdas
         val open = if (state.w.liftIsOpen) 1 else 0
   //      val distToLambda = if (state.w.liftIsOpen) 0 else state.w.remainingLambdaPositions.map(p => p.distanceTo(state.w.robot)).min
         val distToLambda = if (state.w.liftIsOpen) 0 else {

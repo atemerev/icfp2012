@@ -12,9 +12,8 @@ trait States {
     def terminal: Boolean = false
     def w: World
     def steps: Int = commands.size
-    def collectedLambdas: Int
     def stepsUnderwater: Int = 0
-    def score = 25 * collectedLambdas - steps
+    def score = 25 * w.collectedLambdas - steps
     def status: String
     override def toString = "status = " + status + "\n" + w
     def position = w.robot
@@ -44,26 +43,26 @@ trait States {
     }
   }
 
-  case class InProgress(w: World, commands: Commands, collectedLambdas: Int, suw: Int) extends State {
+  case class InProgress(w: World, commands: Commands, suw: Int) extends State {
     def status = "in progress"
     override def stepsUnderwater = suw
     def step(c: Command): State = stepGame(this, c)
   }
 
-  case class Lost(w: World, commands: Commands, collectedLambdas: Int) extends State {
+  case class Lost(w: World, commands: Commands) extends State {
     override def terminal = true
     def status = "lost"
   }
 
-  case class Aborted(w: World, commands: Commands, collectedLambdas: Int) extends State {
+  case class Aborted(w: World, commands: Commands) extends State {
     override def terminal = true
     def status = "aborted"
-    override def score = super.score + 25 * collectedLambdas
+    override def score = super.score + 25 * w.collectedLambdas
   }
 
-  case class Won(w: World, commands: Commands, collectedLambdas: Int) extends State {
+  case class Won(w: World, commands: Commands) extends State {
     override def terminal = true
     def status = "won"
-    override def score = super.score + 50 * collectedLambdas
+    override def score = super.score + 50 * w.collectedLambdas
   }
 }
