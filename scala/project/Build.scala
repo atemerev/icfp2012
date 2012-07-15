@@ -80,8 +80,8 @@ object ProjectBuild extends Build {
     settings = buildSettings ++ assemblySettings ++ Seq(
       InputKey[Unit]("game") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
         (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
-          if (args.length != 1) {
-            println("usage: game <file name in data>")
+          if (args.length != 1 && args.length != 2) {
+            println("usage: game <file name in data> [<mods>]")
           } else {
             val filename = file("../data/" + args(0) + ".txt").absolutePath
             val logger = ConsoleLogger()
@@ -96,8 +96,8 @@ object ProjectBuild extends Build {
       },
       InputKey[Unit]("gen1") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
         (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
-          if (args.length != 1) {
-            println("usage: gen1 <file name in data>")
+          if (args.length != 1 && args.length != 2) {
+            println("usage: gen1 <file name in data> [<mods>]")
           } else {
             val filename = file("../data/" + args(0) + ".txt").absolutePath
             val logger = ConsoleLogger()
@@ -112,8 +112,8 @@ object ProjectBuild extends Build {
       },
       InputKey[Unit]("ast") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
         (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
-          if (args.length != 1) {
-            println("usage: ast <file name in data>")
+          if (args.length != 1 && args.length != 2) {
+            println("usage: ast <file name in data> [<mods>]")
           } else {
             val filename = file("../data/" + args(0) + ".txt").absolutePath
             val logger = ConsoleLogger()
@@ -128,15 +128,16 @@ object ProjectBuild extends Build {
       },
       InputKey[Unit]("chess") <<= inputTask { (argTask: TaskKey[Seq[String]]) =>
         (argTask, fullClasspath in Compile, runner) map { (args, classpath, runner) =>
-          if (args.length != 1) {
-            println("usage: chess <file name in data>")
+          if (args.length != 1 && args.length != 2) {
+            println("usage: chess <file name in data> [<mods>]")
           } else {
             val filename = file("../data/" + args(0) + ".txt").absolutePath
+            val argsForMain = if (args.length == 2) List(filename, args(1)) else List(filename)
             val logger = ConsoleLogger()
             Run.executeTrapExit({
               Run.run("icfp.Main",
                 classpath map (_.data),
-                Seq("chess", filename),
+                Seq("chess") ++ argsForMain,
                 logger)(runner)
             }, logger)
           }

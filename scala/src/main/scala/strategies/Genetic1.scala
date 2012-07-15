@@ -132,7 +132,9 @@ trait Genetic1 {
           val prev = mods.getOrElse(pos, 0)
           mods(pos) = prev + cache(seq).score
         }))
-        println(mods)
+        if (trace) {
+          println(mods)
+        }
 
         if (trace) {
           println()
