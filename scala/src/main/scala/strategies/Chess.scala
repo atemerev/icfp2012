@@ -24,7 +24,7 @@ trait Chess {
           state.w.remainingLambdaPositions map (p => lambdaMaps(p)(state.w.robot.x)(state.w.robot.y)) min
         }
         val distToLift = if (state.w.liftIsOpen) liftMap(state.w.robot.x)(state.w.robot.y) else 1000
-        lambdas * 500 + open * 1000 + (2000 / distToLift) * open - distToLambda * 10
+        lambdas * 300 + open * 1000 + (2000 / distToLift) * open - distToLambda * 10
       }
     }
 
@@ -50,9 +50,18 @@ trait Chess {
     val start = System.currentTimeMillis()
     def isTimeout = (System.currentTimeMillis() - start) / 1000 > timeout
     var g = game
-    while (!isTimeout && !g.terminal && g.commands.size <= g.w.w * g.w.h) {
+    var progress = List[Int](g.commands.size)
+    var i = 0
+    var reachable = true
+    def isStuck = if (reachable && i > 10) {
+      val delta = progress(i) - progress(i - 10)
+      // println(progress)
+      delta < 15
+    } else false
+    while (!isTimeout && !isStuck && !g.terminal && g.commands.size <= g.w.w * g.w.h) {
       if (trace) println(g.w)
       lambdaMaps = g.w.remainingLambdaPositions map (p => p -> mkDistMap(g.w, p)) toMap;
+      reachable = g.w.remainingLambdas == 0 || (lambdaMaps.map(_._2(g.w.robot.x)(g.w.robot.y)).min < 1000)
       liftMap = mkDistMap(g.w, g.w.lift)
       val leaves = mkTree(g).leaves
       if (trace) {
@@ -69,6 +78,8 @@ trait Chess {
 //        println(lm._2.transpose.map(x => x.map(i => if (i > 1000) "#" else "%1d".format(i)).mkString("")).reverse.mkString("\n"))
 //        println()
 //      }
+      i += 1
+      progress :+= g.commands.size
     }
 //    println(bestAborts.map({ case (s,i) => (s.commands.mkString, i)}).toList.sortBy(-_._2))
     val bestAbort = ((bestAborts + (game -> -1)) maxBy { case (s, i) => s.score })._1
