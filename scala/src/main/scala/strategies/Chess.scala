@@ -7,7 +7,7 @@ trait Chess {
 
   val MAX_LEVEL = 4
 
-  var bestAborts = List[State]()
+  var bestAborts = Map[State, Int]()
   var lambdaMaps = Map[Point, DistanceMap]()
   var liftMap: DistanceMap = null
 
@@ -36,7 +36,7 @@ trait Chess {
     lazy val children: List[Node] = {
       val commands = List(Up, Down, Left, Right, Abort, Wait)
       if (level > MAX_LEVEL) Nil else commands.flatMap(c => state match {
-        case ip: InProgress if step(ip, c).w.robot != state.w.robot => Some(Node(this, c, step(ip, c), level + 1, c == Abort))
+        case ip: InProgress if step(ip, c).w.robot != state.w.robot || step(ip, c).isInstanceOf[Aborted] => Some(Node(this, c, step(ip, c), level + 1, c == Abort))
         case _ => None
       })
     }
@@ -60,11 +60,12 @@ trait Chess {
       val (aborts, games) = leaves partition (_.aborted)
       val bestGame = games.maxBy(l => score(l.state))
       val bestAbort = aborts.maxBy(l => score(l.state))
-      bestAborts :+= bestAbort.state
+      bestAborts += (bestAbort.state -> score(bestAbort.state))
       g = bestGame.state
     }
-    val bestAbort = bestAborts maxBy (s => score(s))
-    val bestResult = List(bestAbort, g) maxBy (s => score(s))
+//    println(bestAborts.map({ case (s,i) => (s.commands.mkString, i)}).toList.sortBy(-_._2))
+    val bestAbort = (bestAborts maxBy { case (s, i) => s.score })._1
+    val bestResult = List(bestAbort, g) maxBy (_.score)
     val commands = bestResult.commands
     if (trace) {
       println(bestResult.w)
