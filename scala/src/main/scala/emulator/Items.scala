@@ -82,7 +82,7 @@ trait Items {
   }
 
   case class Trampoline(name: Char) extends Item {
-    override def toString = name.toString
+    override def toString = (name + "").toString
     def isPassable = true
     def isRock = false
   }

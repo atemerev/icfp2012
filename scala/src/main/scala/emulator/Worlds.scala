@@ -210,19 +210,19 @@ trait DumbWorlds {
       if (line startsWith "Trampoline") {
         val Format = """^Trampoline (.) targets (.)$""".r
         val Format(name, destination) = line
-        trampolines += (name(0) -> destination(0))
+        trampolines += (destination(0) -> name(0))
         ("", "")
       } else {
         val Format = """^(\w+)\s+(.+?)\s*$""".r
         val Format(key, value) = line
         (key, value)
       }
-    }) toMap
+    }) toMap;
     val targets = collection.mutable.Map[Trampoline, Point]()
     val parsed = mine.zipWithIndex map { case (line, y) =>
       line.zipWithIndex map { case (c, x) =>
         if ('1' <= c && c <= '9') {
-          targets += (Trampoline(c) -> (x, y))
+          targets += (Trampoline(trampolines(c)) -> (x, y))
           Empty
         } else {
           try {
