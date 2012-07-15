@@ -1,8 +1,6 @@
 package icfp
 
-import strategies.AStarSearch
-
-object Main extends App with DumbEmulator with Strategies with AStarSearch with emulator.Cli {
+object Main extends App with DumbEmulator with Strategies with emulator.Cli {
   def loadLines(url: String): List[String] =
     // (xb) would also be great to automatically download samples from the server
     scala.io.Source.fromFile(url).getLines().toList
@@ -82,5 +80,25 @@ object Main extends App with DumbEmulator with Strategies with AStarSearch with 
       if (stuff.length != 1) { println("Usage: tourney <url of map>"); sys.exit(-1) }
       val algo = stuff(0)
       println("algo is " + algo)
+      val data = System.getProperty("user.dir") + "/../data"
+      val tests = new java.io.File(data).listFiles.toList.sorted
+      tests foreach { test =>
+        print(test.getName + "... ")
+        val start = System.currentTimeMillis()
+        try {
+          val game = mkGame(mkWorld(loadLines(test.getCanonicalPath)))
+          val commands = algo match {
+            case "gen1" => genetic1(game, false)
+            case "ast" => search(game, false)
+            case "chess" => chess(game, false)
+          }
+          val finalState = playGame(game, commands)
+          print(finalState.score)
+        } catch {
+          case _ => print("*")
+        }
+        val end = System.currentTimeMillis()
+        println(" [" + (end - start) / 1000 + " s]")
+      }
   }
 }
