@@ -1,12 +1,12 @@
 package icfp.algorithms.graphs
 
 import collection.mutable.{HashMap, HashSet}
-import icfp.algorithms.core.{Edge, FibonacciHeap, Graph, Vertex}
+import icfp.algorithms.core._
 import icfp.Trace
 
 // source: http://code.google.com/p/scalgorithm
 
-class AStar[A,B](trace: Boolean) {
+class AStar[A,B] {
 
   type searchNodeClass = (Double,Double,List[(Vertex[A,B], Edge[A, B])]) //f,g,path
   implicit def searchNodeClassToOrdered(thisSearchNode:searchNodeClass) : Ordered[searchNodeClass] = new Ordered[searchNodeClass]{
@@ -28,7 +28,7 @@ class AStar[A,B](trace: Boolean) {
   def searchTechicalities(graph:Graph[A,B],s:Vertex[A,B],goal:(Vertex[A,B]) => Boolean,h:(Vertex[A,B]) => Double): searchNodeClass = {
     assume(graph.vertices.contains(s))
     s.tag = (0,Nil)
-    val Q = new FibonacciHeap[searchNodeClass]((-1,0, Nil))
+    val Q = new BinomialHeap[searchNodeClass]((-1,0, Nil))
     Q += (0,0,List((s, null)))
 
     val expanded = new HashSet[Vertex[A,B]]()
@@ -57,15 +57,16 @@ class AStar[A,B](trace: Boolean) {
           if(Qmap.contains(v)){// if there already exists a path to this node from some other route
             val present = Qmap(v)
             if(present._2 > gVal){ // and the cost of that path is greater than this one
+              if (Trace.isEnabled) println("Replacing " + present + "with" + Nv)
+              // replace present with new one
+              Qmap(v) = Nv
               // then remove that path from the Queue
               Q -= present
-              Qmap -= v
               // and add the new path to the Queue
               Q += Nv
-              Qmap += v -> Nv
             }
           }else{
-            if (Trace.isEnabled) println("" + Nv + ": NEVER SEEN BEFORE?")
+            if (Trace.isEnabled) println("" + v + ": NEVER SEEN BEFORE?")
             Qmap += v -> Nv
             Q += Nv
           }

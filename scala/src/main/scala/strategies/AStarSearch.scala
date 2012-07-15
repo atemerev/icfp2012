@@ -43,10 +43,10 @@ trait AStarSearch {
 
   def eval(node: Vertex[State, Command]): Double = if (node.data.mayGetToLift) node.data.w.remainingLambdas else SOME_STUPID_BIG_NUMBER * 2
 
-  def search(state: State, timeout: Int, trace: Boolean): Commands = {
-    if (trace) { println(state.w.lift) }
-    if (trace) println("Running " + state)
-    val withLambdas = collectLambdas(state, trace)
+  def search(state: State, timeout: Int): Commands = {
+    if (Trace.isEnabled) println("Running " + state)
+    val withLambdas = collectLambdas(state)
+    if (Trace.isEnabled) println("Got all lambdas: " + withLambdas)
     val atLift = getToLift(withLambdas._2)
     withLambdas._1 ++ atLift._1
   }
@@ -56,12 +56,12 @@ trait AStarSearch {
     state.status == "won"
   }
 
-  def getToLift(start: State, trace: Boolean = false): (Commands, State) = findPath(start, theEnd, trace)
+  def getToLift(start: State): (Commands, State) = findPath(start, theEnd)
 
-  def collectLambdas(start: State, trace: Boolean = false): (Commands, State) = findPath(start, hasAllLambdas, trace)
+  def collectLambdas(start: State): (Commands, State) = findPath(start, hasAllLambdas)
 
-  def findPath(start: State, isGoal: State => Boolean, trace: Boolean = false): (Commands, State) = {
-    val astar = new AStar[State,Command](trace)
+  def findPath(start: State, isGoal: State => Boolean): (Commands, State) = {
+    val astar = new AStar[State,Command]
 
     def isLastNode(node: Vertex[State, Command]): Boolean = {
       isGoal(node.data)
@@ -69,12 +69,12 @@ trait AStarSearch {
 
     try {
       val result = astar.search(graph, vertex(start), isLastNode, eval)
-      if (trace) println(result)
+      if (Trace.isEnabled) println(result)
       val chain = result filter (null!=) map (_.value)
       (chain, result.last.v2.data)
     } catch {
       case x =>{
-        if (trace) {
+        if (Trace.isEnabled) {
           println("oops, " + x)
           x.printStackTrace()
         }
