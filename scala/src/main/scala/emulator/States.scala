@@ -36,6 +36,8 @@ trait States {
     }
     def haveAllLambdas = w.remainingLambdas == 0
 
+    override def hashCode = position.hashCode + w.hashCode
+
     override def equals(x: Any) = x.isInstanceOf[State] && {
       val other = x.asInstanceOf[State]
       position == other.position && w == other.w
