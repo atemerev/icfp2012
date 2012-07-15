@@ -64,7 +64,7 @@ trait Chess {
       g = bestGame.state
     }
 //    println(bestAborts.map({ case (s,i) => (s.commands.mkString, i)}).toList.sortBy(-_._2))
-    val bestAbort = (bestAborts maxBy { case (s, i) => s.score })._1
+    val bestAbort = ((bestAborts + (game -> -1)) maxBy { case (s, i) => s.score })._1
     val bestResult = List(bestAbort, g) maxBy (_.score)
     val commands = bestResult.commands
     if (trace) {
