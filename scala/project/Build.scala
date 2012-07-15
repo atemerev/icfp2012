@@ -123,7 +123,7 @@ object ProjectBuild extends Build {
             Run.executeTrapExit({
               Run.run("icfp.Main",
                 classpath map (_.data),
-                Seq("a*", filename),
+                Seq("ast", filename),
                 logger)(runner)
             }, logger)
           }

@@ -11,26 +11,24 @@ class AStar[A,B](trace: Boolean) {
   type searchNodeClass = (Double,Double,List[(Vertex[A,B], Edge[A, B])]) //f,g,path
   implicit def searchNodeClassToOrdered(thisSearchNode:searchNodeClass) : Ordered[searchNodeClass] = new Ordered[searchNodeClass]{
     def compare(thatSearchNode:searchNodeClass):Int = {
-      //println("comparing : "+thisVertex.data+" - "+thatVertex.data)
-      thatSearchNode._1 - thisSearchNode._1 match {
-        case d if(d> 0) => -1
-        case d if(d< 0) => 1
-        case _ => 0
-      }
+      val d = thatSearchNode._1 - thisSearchNode._1
+      if (d > 0) -1 else if (d < 0) 1 else 0
     }
   }
 
+  def path(node: searchNodeClass) = node._3.reverse map (_._2)
 
   def search(graph:Graph[A,B],s:Vertex[A,B],goal:(Vertex[A,B]) => Boolean,h:(Vertex[A,B]) => Double): List[Edge[A,B]] = {
-    val N = searchTechicalities(graph, s, goal, h)
-    if (Trace.isEnabled) println(N)
-    N._3.reverse map (_._2)
+    val node = searchTechicalities(graph, s, goal, h)
+    val p = path(node)
+    if (Trace.isEnabled) println("found: " + node + "(" + p + ")")
+    p
   }
 
   def searchTechicalities(graph:Graph[A,B],s:Vertex[A,B],goal:(Vertex[A,B]) => Boolean,h:(Vertex[A,B]) => Double): searchNodeClass = {
     assume(graph.vertices.contains(s))
     s.tag = (0,Nil)
-    val Q = new FibonacciHeap[searchNodeClass]((-1,0,Nil))
+    val Q = new FibonacciHeap[searchNodeClass]((-1,0, Nil))
     Q += (0,0,List((s, null)))
 
     val expanded = new HashSet[Vertex[A,B]]()
@@ -57,9 +55,10 @@ class AStar[A,B](trace: Boolean) {
           val f = gVal + h(v)
           val Nv = (f,gVal,(v,e)::N._3)
           if(Qmap.contains(v)){// if there already exists a path to this node from some other route
-            if(Qmap(v)._2 > gVal){ // and the cost of that path is greater than this one
+            val present = Qmap(v)
+            if(present._2 > gVal){ // and the cost of that path is greater than this one
               // then remove that path from the Queue
-              Q -= Qmap(v)
+              Q -= present
               Qmap -= v
               // and add the new path to the Queue
               Q += Nv
@@ -67,8 +66,8 @@ class AStar[A,B](trace: Boolean) {
             }
           }else{
             if (Trace.isEnabled) println("" + Nv + ": NEVER SEEN BEFORE?")
-            Q += Nv
             Qmap += v -> Nv
+            Q += Nv
           }
         })
 

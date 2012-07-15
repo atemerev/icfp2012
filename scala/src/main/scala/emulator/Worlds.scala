@@ -176,6 +176,7 @@ trait DumbWorlds {
     }
 
     override def toString = data.reverse.map(_.mkString).mkString("\n")
+    override def hashCode = data.hashCode
     override def equals(o: Any) = o.isInstanceOf[World] && data == o.asInstanceOf[World].data
 
 //    def cutTop(left: Int, right: Int) = {
