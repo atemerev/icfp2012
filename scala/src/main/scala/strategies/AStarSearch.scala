@@ -11,19 +11,25 @@ trait AStarSearch {
   self: emulator.Commands with emulator.Games with emulator.Items with emulator.Points with emulator.States with emulator.Worlds =>
 
   case class EState(state: State) {
+    private def world = state.w
     override def hashCode: Int = state.w.hashCode
     override def equals(x: Any) = x.isInstanceOf[EState] &&
-    state.w == x.asInstanceOf[EState].state.w
+    state.w == x.asInstanceOf[EState].world
     def step(c: Command) = new EState(stepGame(state, c))
     def hasAllLambdas = state.haveAllLambdas
+    def isBad = { val r = state.status == "lost" || !state.mayGetToLift
+      if (r) {
+        println("oh shit:\n" + this)
+println("...")
+      }
+      r
+    }
     def eval: Double = {
-      val v = if (state.mayGetToLift) 25 * state.w.remainingLambdas else SOME_STUPID_BIG_NUMBER
-      v
+      val sumDistances = world.remainingLambdaPositions.map(world.distanceToLift).sum
+      sumDistances * 100 + world.fromRobotToLift
     }
     def theEnd = state.status == "won"
-    override def toString = {
-      state.w.toString
-    }
+    override def toString = world.toString
   }
 
   val SOME_STUPID_BIG_NUMBER:Double = 100000.
@@ -40,8 +46,9 @@ trait AStarSearch {
       private def newEdge(command: Command, state: EState) =  new Edge(command, weight(command), this, vertex(state), true, false)
 
       private def createNeighbors {
-        val neighbors: Map[EState, Command] = knownCommands.map( (c: Command) => (estate.step(c), c) ).toMap.filterKeys(estate !=)
-        val newEdges: Iterable[Edge[EState, Command]] = neighbors map { case (estate, command) => newEdge(command, estate) }
+        val neighbors: Map[EState, Command] = knownCommands.map( (c: Command) => (estate.step(c), c) ).toMap.filterKeys(estate!=)
+        val goodNeighbors: Map[EState, Command] = neighbors.filterKeys(newEstate => !newEstate.isBad)
+        val newEdges: Iterable[Edge[EState, Command]] = goodNeighbors map { case (estate, command) => newEdge(command, estate) }
         newEdges foreach ((e: Edge[EState, Command]) => graph.addEdge(e))
       }
 
@@ -62,10 +69,7 @@ trait AStarSearch {
   def search(state: State, timeout: Int): Commands = {
     val estate = EState(state)
     if (Trace.isEnabled) println("Running " + state)
-    val withLambdas = collectLambdas(estate)
-    if (Trace.isEnabled) println("Got all lambdas: " + withLambdas)
-    val atLift = getToLift(withLambdas._2)
-    withLambdas._1 ++ atLift._1
+    findPath(estate, (e => e.theEnd))._1
   }
 
   def getToLift(start: EState): (Commands, EState) = findPath(start, (e => e.theEnd))

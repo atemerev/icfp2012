@@ -28,13 +28,14 @@ class AStar[A,B] {
   def searchTechicalities(graph:Graph[A,B],s:Vertex[A,B],goal:(Vertex[A,B]) => Boolean,h:(Vertex[A,B]) => Double): searchNodeClass = {
     assume(graph.vertices.contains(s))
     s.tag = (0,Nil)
-    val Q = new FibonacciHeap[searchNodeClass]((-1,0, Nil))
+    val Q = new BinomialHeap[searchNodeClass]((-1,0, Nil))
     Q += (0,0,List((s, null)))
 
     val expanded = new HashSet[Vertex[A,B]]()
     val Qmap = new HashMap[Vertex[A,B],searchNodeClass]()
 
     while(!Q.empty){
+//      println("\n==========\n" + Q + "\n-----------------\n")
       val N = Q.extractMin.get
       val p = N._3.head
       val u = p._1

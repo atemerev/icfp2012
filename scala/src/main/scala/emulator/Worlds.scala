@@ -28,11 +28,13 @@ trait Worlds {
     def heightOverWater = robot.y - water
     def isUnderwater: Boolean = heightOverWater < 0
     def timeToNextFlood: Int
+    def distanceToLift(p: Point): Int
     def lambdaClosestToLift: Point
     def evolve: World
     def isFinal: Boolean
     def finalCommand: Command
     def liftIsBlockedForever: Boolean
+    def fromRobotToLift: Int
     def trampolines: Map[Trampoline, Point]
     def trampolinePositions: List[Point]
     def metadata: Map[String, String]
@@ -107,12 +109,13 @@ trait DumbWorlds {
     def blocked(x: Int, y: Int) = this(x, y) == Wall || this(x, y).isRock
 
     def liftIsBlockedForever = {
-//      lift.x == 0   && blocked(  1, lift.y) && (blocked(  1, lift.y-1) || blocked(  1, lift.y+1)) || // these rules may be wrong too; rocks may fall
-//      lift.x == w-1 && blocked(w-2, lift.y) && (blocked(w-2, lift.y-1) || blocked(w-2, lift.y+1)) ||
-      lift.y == 1   && blocked(lift.x,   2) && (blocked(lift.x-1,   2) || blocked(lift.x+1,   2)) // does not appy to top: ceiling rocks may fall
+      val blockedLeft  = lift.x == 0 && (1 to lift.y).forall (blocked(1, _))
+      val blockedRight = lift.x == w-1 && (1 to lift.y).forall (blocked(w-2, _))
+      val blockedBottom = lift.y == 0   && blocked(lift.x,   1) && (blocked(lift.x+1,   1)) // does not appy to top: ceiling rocks may fall
+      blockedLeft || blockedBottom || blockedRight
     }
 
-    def nearLift = robot.distanceTo(lift) < 2
+    def nearLift = distanceToLift(robot) < 2
 
     def isFinal = remainingLambdas == 0 && nearLift
 
@@ -134,6 +137,8 @@ trait DumbWorlds {
       robotAt
     }
 
+    def fromRobotToLift = distanceToLift(robot)
+    
     def remainingLambdaPositions = lambdas map { case (x, y) => Point(x, y) } toList
 
     def trampolinePositions = points filter (tup => this(tup).isTrampoline) map { case (x, y) => Point(x, y) } toList
