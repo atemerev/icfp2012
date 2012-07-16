@@ -25,7 +25,7 @@ println("...")
       r
     }
     def eval: Double = {
-      val sumDistances = world.remainingLambdaPositions.map(world.distanceToLift).sum
+      val sumDistances = world.distanceToLambdas(world.lift) + world.distanceToNearestLambda(world.robot)
       sumDistances * 100 + world.fromRobotToLift
     }
     def theEnd = state.status == "won"

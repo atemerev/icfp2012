@@ -102,9 +102,6 @@ val deepWell = """
   "find lift" -> (() => {
     (Point(9,16), crossWorld.lift)
   }),
-  "lambda closest to lift" -> (() => {
-    (Point(9,14), crossWorld.lambdaClosestToLift)
-  }),
   "no flooding in a dry well" -> (() => {
     (0, dryWell.flooding)
   }),

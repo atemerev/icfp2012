@@ -37,7 +37,7 @@ trait Items {
   }
 
   case class Rock(nut: Boolean) extends Item {
-    override def toString = "*"
+    override def toString = if (nut) "@" else "*"
     def isPassable = false
     def isRock = true
     def isTrampoline = false

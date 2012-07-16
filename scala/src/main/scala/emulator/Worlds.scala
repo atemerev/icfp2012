@@ -29,7 +29,8 @@ trait Worlds {
     def isUnderwater: Boolean = heightOverWater < 0
     def timeToNextFlood: Int
     def distanceToLift(p: Point): Int
-    def lambdaClosestToLift: Point
+    def distanceToLambdas(p: Point): Int
+    def distanceToNearestLambda(p: Point): Int
     def evolve: World
     def isFinal: Boolean
     def finalCommand: Command
@@ -128,7 +129,10 @@ trait DumbWorlds {
 
     def distanceToLift(p: Point) = p.distanceTo(lift)
 
-    def lambdaClosestToLift = tupleToPoint((lambdas map (p => (distanceToLift(p), p)) min)._2)
+    def distanceToLambdas(p: Point) = remainingLambdaPositions.map(p distanceTo _).sum
+
+    def nearestLambda(p: Point) = tupleToPoint((lambdas map (q => (p.distanceTo(q), q)) min)._2)
+    def distanceToNearestLambda(p: Point) = if (lambdas.isEmpty) 0 else (lambdas map (p.distanceTo(_)) min)
 
     private var robotAt: Point = Invalid
 
