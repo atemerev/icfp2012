@@ -92,7 +92,7 @@ trait DumbWorlds {
     def isA(item: Item)(p: (Int, Int)) = this(p) == item
     def oneOf(items: Item*)(p: (Int, Int)) = items exists (this(p)==_)
     def points = for (x <- 0 to w; y <- 0 to h) yield (x, y)
-    def lambdas = points filter (isA(Lambda))
+    def lambdas = points filter (oneOf(Lambda, Rock(true)))
     def find(what: Item): Option[(Int, Int)] = points find (isA(what))
 
     // make sense to pass it between generations, together with meta, in an additional props structure
