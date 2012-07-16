@@ -4,7 +4,7 @@ package strategies
 trait Chess {
   self: emulator.Commands with emulator.Games with emulator.Items with emulator.Points with emulator.States with emulator.Worlds with Pathfinder =>
 
-  def chess(game: State, timeout: Int, trace: Boolean): Commands = {
+  def chess(game: State, timeout: Int, trace: Boolean, interrupt: () => Boolean): Commands = {
     val MAX_LEVEL = 4
 
     var bestAborts = Map[State, Int]()
@@ -20,11 +20,14 @@ trait Chess {
         val lambdas = state.w.collectedLambdas
         val open = if (state.w.liftIsOpen) 1 else 0
   //      val distToLambda = if (state.w.liftIsOpen) 0 else state.w.remainingLambdaPositions.map(p => p.distanceTo(state.w.robot)).min
-        val distToLambda = if (state.w.liftIsOpen) 0 else {
-          state.w.remainingLambdaPositions map (p => lambdaMaps(p)(state.w.robot.x)(state.w.robot.y)) min
+        val (distToLambda: Int, reachableLambdas: Int) = if (state.w.liftIsOpen) (0, 0) else {
+          val distances: List[Int] = state.w.remainingLambdaPositions map (p => lambdaMaps(p)(state.w.robot.x)(state.w.robot.y))
+          val reachable = distances.filter(_ < 1000).size
+          (if (distances.size > 0) distances.min else 0, reachable)
         }
         val distToLift = if (state.w.liftIsOpen) liftMap(state.w.robot.x)(state.w.robot.y) else 1000
-        lambdas * 300 + open * 1000 + (2000 / distToLift) * open - distToLambda * 10
+        val reachableScore = if (state.w.liftIsOpen) 1000 else if (reachableLambdas > 0) reachableLambdas * 25 else (-1000)
+        lambdas * 300 + open * 1000 + (2000 / distToLift) * open - distToLambda * 10 + reachableScore
       }
     }
 
@@ -58,7 +61,7 @@ trait Chess {
       // println(progress)
       delta < 15
     } else false
-    while (reachable && !isTimeout && !isStuck && !g.terminal && g.commands.size <= g.w.w * g.w.h) {
+    while (reachable && !isTimeout && !interrupt() && !isStuck && !g.terminal && g.commands.size <= g.w.w * g.w.h) {
       if (trace) println(g.w)
       lambdaMaps = g.w.remainingLambdaPositions map (p => p -> mkDistMap(g.w, p)) toMap;
       reachable = g.w.remainingLambdas == 0 || (lambdaMaps.map(_._2(g.w.robot.x)(g.w.robot.y)).min < 1000)

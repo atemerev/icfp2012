@@ -1,5 +1,7 @@
 package icfp
 
+import sun.misc.{SignalHandler, Signal}
+
 object Main extends App with DumbEmulator with Strategies with emulator.Cli {
   def loadLines(url: String): List[String] =
     // (xb) would also be great to automatically download samples from the server
@@ -50,11 +52,16 @@ object Main extends App with DumbEmulator with Strategies with emulator.Cli {
       val commands = search(game, 150)
       println(commands.mkString)
     case "chess" =>
-      if (stuff.length != 1 && stuff.length != 2) { println("Usage: chess <url of map> [<trace>]"); sys.exit(-1) }
+      var br = false
+      val handler = new SignalHandler {
+        def handle(p1: Signal) {println("+++"); br = true}
+      }
+      Signal.handle(new Signal("INT"), handler)
+//      if (stuff.length != 1 && stuff.length != 2) { println("Usage: chess <url of map> [<trace>]"); sys.exit(-1) }
       val game = readGame
-      val trace = stuff.length == 2
-      Trace.isEnabled = true
-      val commands = chess(game, 150, trace)
+//      val trace = stuff.length == 2
+//      Trace.isEnabled = true
+      val commands = chess(game, 100, false, () => br)
       println(commands.mkString)
     case "p" =>
       val game = mkGame(mkWorld(
@@ -89,7 +96,7 @@ object Main extends App with DumbEmulator with Strategies with emulator.Cli {
       val tests = new java.io.File(data).listFiles.toList.sorted
       tests foreach { test =>
         print(test.getName + "... ")
-        val skip = !(test.getName.startsWith("0") || test.getName.startsWith("1") || test.getName.startsWith("spec"))
+        val skip = !(test.getName.startsWith("0") || test.getName.startsWith("1") || test.getName.startsWith("spec") || test.getName.matches("^narod\\d\\d*\\.map"))
         // val skip = !test.getName.startsWith("spec")
         if (skip) println("skipped")
         else {
@@ -102,7 +109,7 @@ object Main extends App with DumbEmulator with Strategies with emulator.Cli {
             val commands = algo match {
               case "gen1" => genetic1(game, timeout, false)
               case "ast" => search(game, timeout)
-              case "chess" => chess(game, timeout, false)
+              case "chess" => chess(game, timeout, false, () => false)
             }
             val finalState = playGame(game, commands)
             print(finalState.score + " / " + hiscore)
