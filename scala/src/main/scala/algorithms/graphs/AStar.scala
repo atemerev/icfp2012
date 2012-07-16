@@ -34,7 +34,6 @@ class AStar[A,B] {
     val Qmap = new HashMap[Vertex[A,B],searchNodeClass]()
 
     while(!Q.empty){
-//      println("\n==========\n" + Q + "\n-----------------\n")
       val N = Q.extractMin.get
       val p = N._3.head
       val u = p._1
