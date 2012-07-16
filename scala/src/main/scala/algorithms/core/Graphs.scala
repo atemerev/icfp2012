@@ -78,7 +78,9 @@ class Edge[A, B](val value: B, var weight:Double, val v1:Vertex[A,B],val v2:Vert
     case _ => false
   }
 
-  override def toString = tag + "(" + weight + "): " + v1.data.toString + (if (directed) "->" else "---") + v2.data
+  override def toString = {
+    "" + value// + "(" + weight + "): " + v1.data.toString + (if (directed) "->\n" else "---\n") + v2.data
+  }
 }
 
 object Graph{

@@ -16,7 +16,7 @@ class AStar[A,B] {
     }
   }
 
-  def path(node: searchNodeClass) = node._3.reverse map (_._2)
+  def path(node: searchNodeClass) = node._3.reverse map (_._2) filter (null !=)
 
   def search(graph:Graph[A,B],s:Vertex[A,B],goal:(Vertex[A,B]) => Boolean,h:(Vertex[A,B]) => Double): List[Edge[A,B]] = {
     val node = searchTechicalities(graph, s, goal, h)
@@ -39,7 +39,7 @@ class AStar[A,B] {
       val p = N._3.head
       val u = p._1
       Qmap -= u
-      if (Trace.isEnabled) println("trying" + p)
+      if (Trace.isEnabled) println("trying\n" + u + "("+ path(N).mkString("") + "->" + N._1+ "/" + N._2 + "); have + " + Qmap.size)
       if(goal(u)){
         return  N
       }
@@ -66,7 +66,7 @@ class AStar[A,B] {
               Q += Nv
             }
           }else{
-            if (Trace.isEnabled) println("" + v + ": NEVER SEEN BEFORE?")
+//            if (Trace.isEnabled) println("" + v + ": NEVER SEEN BEFORE? we have " + Qmap.size + " nodes known")
             Qmap += v -> Nv
             Q += Nv
           }

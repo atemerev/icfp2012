@@ -107,10 +107,9 @@ trait DumbWorlds {
     def blocked(x: Int, y: Int) = this(x, y) == Wall || this(x, y).isRock
 
     def liftIsBlockedForever = {
-      lift.x == 0   && blocked(  1, lift.y) && (blocked(  1, lift.y-1) || blocked(  1, lift.y+1)) ||
-      lift.x == w-1 && blocked(w-2, lift.y) && (blocked(w-2, lift.y-1) || blocked(w-2, lift.y+1)) ||
-      lift.y == 0   && blocked(lift.x,   1) && (blocked(lift.x-1,   1) || blocked(lift.x+1,   1)) ||
-      lift.y == h-1 && blocked(lift.x, h-2) && (blocked(lift.x-1, h-2) || blocked(lift.x+1, h-2))
+//      lift.x == 0   && blocked(  1, lift.y) && (blocked(  1, lift.y-1) || blocked(  1, lift.y+1)) || // these rules may be wrong too; rocks may fall
+//      lift.x == w-1 && blocked(w-2, lift.y) && (blocked(w-2, lift.y-1) || blocked(w-2, lift.y+1)) ||
+      lift.y == 0   && blocked(lift.x,   1) && (blocked(lift.x-1,   1) || blocked(lift.x+1,   1))) // does not appy to top: ceiling rocks may fall
     }
 
     def nearLift = robot.distanceTo(lift) < 2
@@ -205,23 +204,15 @@ trait DumbWorlds {
     }
 
     override def toString = data.reverse.map(_.mkString).mkString("\n") + (if (razors == 0) "" else " (%d razor%s)".format(razors, if (razors == 1) "" else "s"))
-    override def hashCode = data.hashCode
-    override def equals(o: Any) = o.isInstanceOf[World] && data == o.asInstanceOf[World].data
+    private var hashcode: Option[Int] = None
+    override def hashCode = { hashcode = Some(hashcode.getOrElse(data.hashCode)); hashcode.get }
 
-//    def cutTop(left: Int, right: Int) = {
-//      // todo: fill the ceiling with wall blocks, to decrease the space for search
-//      this
-//    }
-//
-//    def tryCutTop: Option[World] = {
-//      if (lift.y < h-2) {
-//        for (left  <- (0 to w) find (x => this(x, h - 1) == Wall);
-//             right <- (left to w) find (x => this(x, h - 1) != Wall)
-//             if ((left to (right - 1)) forall (x => this(x, h-2) == Empty && this(x, h-3) == Empty))) {
-//               return Some(cutTop(left, right - 1))
-//             }
-//      } else None
-//    }
+    override def equals(o: Any) = o.isInstanceOf[World] && {
+      val other = o.asInstanceOf[World]
+      hashCode() == other.hashCode() && data == other.data
+    }
+
+    def hasBeards = points contains Beard
   }
 
   def mkWorld(lines0: List[String], age: Int = 0) = { // (xb to vp) why explicit age?

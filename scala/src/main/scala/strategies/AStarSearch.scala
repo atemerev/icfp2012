@@ -5,71 +5,88 @@ import algorithms.graphs.AStar
 import emulator._
 import algorithms.core.{Edge, Graph, Vertex}
 import collection.immutable.{Iterable, Map}
+import strategies.AStarSearch.EState
 
 trait AStarSearch {
   self: emulator.Commands with emulator.Games with emulator.Items with emulator.Points with emulator.States with emulator.Worlds =>
-  val SOME_STUPID_BIG_NUMBER:Double = 40876.
+
+  case class EState(state: State) {
+//    override def hashCode: Int = state.hashCode
+//    override def equals(that: Any) = {
+//      val res =
+//      that.isInstanceOf[EState] &&
+//        state == that.asInstanceOf[EState].state
+//      res
+//    }
+        override def hashCode: Int = state.w.hashCode
+        override def equals(x: Any) = x.isInstanceOf[EState] &&
+        state.w == x.asInstanceOf[EState].state.w
+    def step(c: Command) = new EState(stepGame(state, c))
+    def hasAllLambdas = state.haveAllLambdas
+    def eval: Double = if (state.mayGetToLift) 25 * state.w.remainingLambdas else SOME_STUPID_BIG_NUMBER
+    def theEnd = state.status == "won"
+    override def toString = {
+      state.w.toString
+    }
+  }
+
+  val SOME_STUPID_BIG_NUMBER:Double = 100000.
   val knownCommands = Set(Left, Right, Up, Down, Wait)
   val weight = Map[Command, Double](Left -> 1, Right -> 1, Up -> 1, Down -> 1, Wait -> 0.5)
-  val graph: Graph[State, Command] = Graph(Nil, true)
+  val graph: Graph[EState, Command] = Graph(Nil, true)
 
-  def vertex(state: State): Vertex[State, Command] = {
+  def vertex(state: State): Vertex[EState, Command] = vertex(EState(state))
 
-    val result: Vertex[State, Command] = new Vertex[State, Command](state) {
+  def vertex(estate: EState): Vertex[EState, Command] = {
+    val result: Vertex[EState, Command] = new Vertex[EState, Command](estate) {
       private var knowsNeighbors = false;
 
-      private def newEdge(command: Command, state: State) =  new Edge(command, weight(command), this, vertex(state), true, false)
+      private def newEdge(command: Command, state: EState) =  new Edge(command, weight(command), this, vertex(state), true, false)
 
       private def createNeighbors {
-        val neighbors: Map[State, Command] = knownCommands.map( (c: Command) => (stepGame(state, c), c) ).toMap.filterKeys(state !=)
-        val newEdges: Iterable[Edge[State, Command]] = neighbors map { case (state, command) => newEdge(command, state) }
-        newEdges foreach ((e: Edge[State, Command]) => graph.addEdge(e))
+        val neighbors: Map[EState, Command] = knownCommands.map( (c: Command) => (estate.step(c), c) ).toMap.filterKeys(estate !=)
+        val newEdges: Iterable[Edge[EState, Command]] = neighbors map { case (estate, command) => newEdge(command, estate) }
+//        if (Trace.isEnabled) println("Adding " + newEdges.size + " new edges")
+        newEdges foreach ((e: Edge[EState, Command]) => graph.addEdge(e))
       }
 
-      override def adjacent() : Set[Edge[State, Command]] = {
+      override def adjacent() : Set[Edge[EState, Command]] = {
         if (!knowsNeighbors) {
           createNeighbors
           knowsNeighbors = true
         }
+        val ad = super.adjacent()
         super.adjacent()
       }
     }
     graph.addVertex(result)
   }
 
-  def hasAllLambdas(state: State): Boolean = {
-    state.haveAllLambdas
-  }
-
-  def eval(node: Vertex[State, Command]): Double = if (node.data.mayGetToLift) node.data.w.remainingLambdas else SOME_STUPID_BIG_NUMBER * 2
+  def eval(node: Vertex[EState, Command]): Double = node.data.eval
 
   def search(state: State, timeout: Int): Commands = {
+    val estate = EState(state)
     if (Trace.isEnabled) println("Running " + state)
-    val withLambdas = collectLambdas(state)
+    val withLambdas = collectLambdas(estate)
     if (Trace.isEnabled) println("Got all lambdas: " + withLambdas)
     val atLift = getToLift(withLambdas._2)
     withLambdas._1 ++ atLift._1
   }
 
-  val theEnd = (state: State) => {
-    if (Trace.isEnabled && (state.w.robot.distanceTo(state.w.lift) < 3)) println("Is " + state + " final?!?!")
-    state.status == "won"
-  }
+  def getToLift(start: EState): (Commands, EState) = findPath(start, (e => e.theEnd))
 
-  def getToLift(start: State): (Commands, State) = findPath(start, theEnd)
+  def collectLambdas(start: EState): (Commands, EState) = findPath(start, (e => e.hasAllLambdas))
 
-  def collectLambdas(start: State): (Commands, State) = findPath(start, hasAllLambdas)
+  def findPath(start: EState, isGoal: EState => Boolean): (Commands, EState) = {
+    val astar = new AStar[EState,Command]
 
-  def findPath(start: State, isGoal: State => Boolean): (Commands, State) = {
-    val astar = new AStar[State,Command]
-
-    def isLastNode(node: Vertex[State, Command]): Boolean = {
+    def isLastNode(node: Vertex[EState, Command]): Boolean = {
       isGoal(node.data)
     }
 
     try {
       val result = astar.search(graph, vertex(start), isLastNode, eval)
-      if (Trace.isEnabled) println(result)
+      if (Trace.isEnabled) println("Found:\n" + result)
       val chain = result filter (null!=) map (_.value)
       (chain, result.last.v2.data)
     } catch {
