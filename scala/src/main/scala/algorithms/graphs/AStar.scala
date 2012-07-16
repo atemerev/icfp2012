@@ -21,7 +21,7 @@ class AStar[A,B] {
   def search(graph:Graph[A,B],s:Vertex[A,B],goal:(Vertex[A,B]) => Boolean,h:(Vertex[A,B]) => Double): List[Edge[A,B]] = {
     val node = searchTechicalities(graph, s, goal, h)
     val p = path(node)
-    if (Trace.isEnabled) println("found: " + node + "(" + p + ")")
+//    if (Trace.isEnabled) println("found: " + node + "(" + p + ")")
     p
   }
 
@@ -47,30 +47,31 @@ class AStar[A,B] {
       //no point expanding u if it has already been expanded on some other route ...
       if(!expanded.contains(u)){
         expanded += u
-        val g = _g(graph,u,N._2)_
-        val adj: Set[Edge[A, B]] = u.adjacent
-        adj.foreach( e => if(!expanded.contains(e.v2)){
-          val v = e.v2
-          val gVal = g(v)
-          val f = gVal + h(v)
-          val Nv = (f,gVal,(v,e)::N._3)
-          if(Qmap.contains(v)){// if there already exists a path to this node from some other route
-            val present = Qmap(v)
-            if(present._2 > gVal){ // and the cost of that path is greater than this one
-//              if (Trace.isEnabled) println("Replacing " + present + "with" + Nv)
-              // replace present with new one
-              Qmap(v) = Nv
-              // then remove that path from the Queue
-              Q -= present
-              // and add the new path to the Queue
+        val adj = u.adjacent
+        if (!adj.isEmpty) {
+          val g = _g(graph,u,N._2)_
+          adj.foreach(e => if(!expanded.contains(e.v2)){
+            val v = e.v2
+            val gVal = g(v)
+            val f = gVal + h(v)
+            val Nv = (f,gVal,(v,e)::N._3)
+            if(Qmap.contains(v)){// if there already exists a path to this node from some other route
+              val present = Qmap(v)
+              if(present._2 > gVal){ // and the cost of that path is greater than this one
+                // replace present with new one
+                Qmap(v) = Nv
+                // then remove that path from the Queue
+                Q -= present
+                // and add the new path to the Queue
+                Q += Nv
+              }
+            }else{
+              //            if (Trace.isEnabled) println("" + Nv + ": NEVER SEEN BEFORE? we have " + Qmap.size + " nodes known")
+              Qmap += v -> Nv
               Q += Nv
             }
-          }else{
-//            if (Trace.isEnabled) println("" + Nv + ": NEVER SEEN BEFORE? we have " + Qmap.size + " nodes known")
-            Qmap += v -> Nv
-            Q += Nv
-          }
-        })
+          })
+        }
 
       }
     }

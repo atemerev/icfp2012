@@ -108,14 +108,18 @@ trait DumbWorlds {
     }
 
     def blocked(x: Int, y: Int) = this(x, y) == Wall || this(x, y).isRock
+    def canFallFreelyFrom(x: Int, y: Int) = (1 to (y - 1)).foreach(apply(x,_) == Empty)
+    def isPureRockAt(x:Int, y: Int) = apply(new Point(x, y)).toString == "*"
+    def rockWillBlock(x: Int) = (1 to h).find(isPureRockAt(x, _)).map(canFallFreelyFrom(x, _)).isDefined
+    def willBeBlocked(x: Int) = blocked(x, 1) || rockWillBlock(x)
 
     def liftIsBlockedForever = {
       val blockedLeft  = lift.x == 0 && (1 to lift.y).forall (blocked(1, _))
       val blockedRight = lift.x == w-1 && (1 to lift.y).forall (blocked(w-2, _))
-      val blockedBottom = lift.y == 0   && blocked(lift.x,   1) && (blocked(lift.x+1,   1)) // does not appy to top: ceiling rocks may fall
+      val blockedBottom = lift.y == 0  && willBeBlocked(lift.x) && (willBeBlocked(lift.x-1)||willBeBlocked(lift.x+1))
       blockedLeft || blockedBottom || blockedRight
     }
-
+ 
     def nearLift = distanceToLift(robot) < 2
 
     def isFinal = remainingLambdas == 0 && nearLift

@@ -10,23 +10,23 @@ object Vertex{
 }
 
 class Vertex[A,B](val data:A){
-  val edges:scala.collection.mutable.Set[Edge[A,B]] = scala.collection.mutable.HashSet[Edge[A,B]]()
+  val edges:scala.collection.mutable.ArrayBuffer[Edge[A,B]] = scala.collection.mutable.ArrayBuffer[Edge[A,B]]()
   val _inEdges:scala.collection.mutable.Set[Edge[A,B]] = scala.collection.mutable.HashSet[Edge[A,B]]()
   var tag:Any = None
 
   def addEdge(edge:Edge[A,B]) : Unit = {
-    edges.add(edge)
+    edges += edge
   }
 
-  def getEdges() : Set[Edge[A,B]] = {
-    edges.toSet
+  def getEdges() : Seq[Edge[A,B]] = {
+    edges
   }
 
   //TODO add test cases for INEDGES 
   def inEdges = _inEdges
   def addInboundEdge(edge:Edge[A,B]) { _inEdges.add(edge) }
 
-  def adjacent() : Set[Edge[A,B]] = {
+  def adjacent() : Seq[Edge[A,B]] = {
     getEdges().filter(e => e.v2 != this)
   }
 

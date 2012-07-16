@@ -17,23 +17,21 @@ trait AStarSearch {
     state.w == x.asInstanceOf[EState].world
     def step(c: Command) = new EState(stepGame(state, c))
     def hasAllLambdas = state.haveAllLambdas
-    def isBad = { val r = state.status == "lost" || !state.mayGetToLift
-      if (r) {
-        println("oh shit:\n" + this)
-println("...")
-      }
+    var isDeadEnd = false
+    def isBad = isDeadEnd || {
+      val r = state.status == "lost" || !state.mayGetToLift
       r
     }
     def eval: Double = {
       val sumDistances = world.distanceToLambdas(world.lift) + world.distanceToNearestLambda(world.robot)
-      sumDistances * 100 + world.fromRobotToLift
+      if (isBad) SOME_STUPID_BIG_NUMBER else sumDistances * 100 + world.fromRobotToLift
     }
     def theEnd = state.status == "won"
     override def toString = world.toString
   }
 
-  val SOME_STUPID_BIG_NUMBER:Double = 100000.
-  val knownCommands = Set(Left, Right, Up, Down, Wait)
+  val SOME_STUPID_BIG_NUMBER:Double = 1000000.
+  val knownCommands = List(Up, Right, Down, Left, Wait)
   val weight = Map[Command, Double](Left -> 1, Right -> 1, Up -> 1, Down -> 1, Wait -> 0.5)
   val graph: Graph[EState, Command] = Graph(Nil, true)
 
@@ -48,17 +46,20 @@ println("...")
       private def createNeighbors {
         val neighbors: Map[EState, Command] = knownCommands.map( (c: Command) => (estate.step(c), c) ).toMap.filterKeys(estate!=)
         val goodNeighbors: Map[EState, Command] = neighbors.filterKeys(newEstate => !newEstate.isBad)
-        val newEdges: Iterable[Edge[EState, Command]] = goodNeighbors map { case (estate, command) => newEdge(command, estate) }
-        newEdges foreach ((e: Edge[EState, Command]) => graph.addEdge(e))
+        val newEdges = goodNeighbors map { case (estate, command) => newEdge(command, estate) }
+        if (newEdges.isEmpty) {
+          estate.isDeadEnd = true
+        }
+        val sortedEdges = newEdges.toList.sort((e1, e2) => e1.value.toString.compare(e2.value.toString) == 1)
+        sortedEdges foreach ((e: Edge[EState, Command]) => graph.addEdge(e))
       }
 
-      override def adjacent() : Set[Edge[EState, Command]] = {
+      override def adjacent() : Seq[Edge[EState, Command]] = {
         if (!knowsNeighbors) {
           createNeighbors
           knowsNeighbors = true
         }
-        val ad = super.adjacent()
-        super.adjacent()
+        getEdges
       }
     }
     graph.addVertex(result)
@@ -85,7 +86,6 @@ println("...")
 
     try {
       val result = astar.search(graph, vertex(start), isLastNode, eval)
-      if (Trace.isEnabled) println("Found:\n" + result)
       val chain = result filter (null!=) map (_.value)
       (chain, result.last.v2.data)
     } catch {
