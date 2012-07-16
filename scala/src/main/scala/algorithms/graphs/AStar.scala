@@ -28,7 +28,7 @@ class AStar[A,B] {
   def searchTechicalities(graph:Graph[A,B],s:Vertex[A,B],goal:(Vertex[A,B]) => Boolean,h:(Vertex[A,B]) => Double): searchNodeClass = {
     assume(graph.vertices.contains(s))
     s.tag = (0,Nil)
-    val Q = new BinomialHeap[searchNodeClass]((-1,0, Nil))
+    val Q = new FibonacciHeap[searchNodeClass]((-1,0, Nil))
     Q += (0,0,List((s, null)))
 
     val expanded = new HashSet[Vertex[A,B]]()
@@ -48,7 +48,6 @@ class AStar[A,B] {
         expanded += u
         val g = _g(graph,u,N._2)_
         val adj: Set[Edge[A, B]] = u.adjacent
-
         adj.foreach( e => if(!expanded.contains(e.v2)){
           val v = e.v2
           val gVal = g(v)
@@ -57,7 +56,7 @@ class AStar[A,B] {
           if(Qmap.contains(v)){// if there already exists a path to this node from some other route
             val present = Qmap(v)
             if(present._2 > gVal){ // and the cost of that path is greater than this one
-              if (Trace.isEnabled) println("Replacing " + present + "with" + Nv)
+//              if (Trace.isEnabled) println("Replacing " + present + "with" + Nv)
               // replace present with new one
               Qmap(v) = Nv
               // then remove that path from the Queue
@@ -66,7 +65,7 @@ class AStar[A,B] {
               Q += Nv
             }
           }else{
-//            if (Trace.isEnabled) println("" + v + ": NEVER SEEN BEFORE? we have " + Qmap.size + " nodes known")
+//            if (Trace.isEnabled) println("" + Nv + ": NEVER SEEN BEFORE? we have " + Qmap.size + " nodes known")
             Qmap += v -> Nv
             Q += Nv
           }

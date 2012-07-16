@@ -109,7 +109,7 @@ trait DumbWorlds {
     def liftIsBlockedForever = {
 //      lift.x == 0   && blocked(  1, lift.y) && (blocked(  1, lift.y-1) || blocked(  1, lift.y+1)) || // these rules may be wrong too; rocks may fall
 //      lift.x == w-1 && blocked(w-2, lift.y) && (blocked(w-2, lift.y-1) || blocked(w-2, lift.y+1)) ||
-      lift.y == 0   && blocked(lift.x,   1) && (blocked(lift.x-1,   1) || blocked(lift.x+1,   1)) // does not appy to top: ceiling rocks may fall
+      lift.y == 1   && blocked(lift.x,   2) && (blocked(lift.x-1,   2) || blocked(lift.x+1,   2)) // does not appy to top: ceiling rocks may fall
     }
 
     def nearLift = robot.distanceTo(lift) < 2

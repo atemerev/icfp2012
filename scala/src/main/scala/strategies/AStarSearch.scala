@@ -11,19 +11,15 @@ trait AStarSearch {
   self: emulator.Commands with emulator.Games with emulator.Items with emulator.Points with emulator.States with emulator.Worlds =>
 
   case class EState(state: State) {
-//    override def hashCode: Int = state.hashCode
-//    override def equals(that: Any) = {
-//      val res =
-//      that.isInstanceOf[EState] &&
-//        state == that.asInstanceOf[EState].state
-//      res
-//    }
-        override def hashCode: Int = state.w.hashCode
-        override def equals(x: Any) = x.isInstanceOf[EState] &&
-        state.w == x.asInstanceOf[EState].state.w
+    override def hashCode: Int = state.w.hashCode
+    override def equals(x: Any) = x.isInstanceOf[EState] &&
+    state.w == x.asInstanceOf[EState].state.w
     def step(c: Command) = new EState(stepGame(state, c))
     def hasAllLambdas = state.haveAllLambdas
-    def eval: Double = if (state.mayGetToLift) 25 * state.w.remainingLambdas else SOME_STUPID_BIG_NUMBER
+    def eval: Double = {
+      val v = if (state.mayGetToLift) 25 * state.w.remainingLambdas else SOME_STUPID_BIG_NUMBER
+      v
+    }
     def theEnd = state.status == "won"
     override def toString = {
       state.w.toString
@@ -46,7 +42,6 @@ trait AStarSearch {
       private def createNeighbors {
         val neighbors: Map[EState, Command] = knownCommands.map( (c: Command) => (estate.step(c), c) ).toMap.filterKeys(estate !=)
         val newEdges: Iterable[Edge[EState, Command]] = neighbors map { case (estate, command) => newEdge(command, estate) }
-//        if (Trace.isEnabled) println("Adding " + newEdges.size + " new edges")
         newEdges foreach ((e: Edge[EState, Command]) => graph.addEdge(e))
       }
 
