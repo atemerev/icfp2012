@@ -121,17 +121,24 @@ trait DumbWorlds {
     }
     def wallAt(x: Int, y: Int) = apply(new Point(x, y)) == Wall
 
+    def blockedFromSides(x: Int, y: Int): Boolean = blocked(x - 1, y) && blocked(x + 1, y)
+    
+    def willBeBlockedFromTop(x: Int, y: Int): Boolean = {
+      val willBeBlockedOnTop: Boolean = willBeBlocked(x, y)
+      val willBeBlockedTopLeft: Boolean = willBeBlocked(x - 1,  y)
+      val willBeBlockedTopRight: Boolean = willBeBlocked(x + 1, y)
+      willBeBlockedOnTop && (willBeBlockedTopLeft||willBeBlockedTopRight)
+    }
+
+    def deadBottom(x: Int, y: Int): Boolean = blockedFromSides(x, y) && (willBeBlockedFromTop (x, y) || deadBottom(x, y+1))
+    
     def liftIsBlockedForever = {
       val lx = lift.x
-      val ly = lift.y
+      val ly = lift.y 
       val blockedLeft  = lx == 0 && (1 to ly).forall (blocked(1, _))
       val blockedRight = lx == w-1 && (1 to ly).forall (blocked(w-2, _))
       val wallBelow = wallAt(lx, ly-1) && (wallAt(lx-1, ly-1) || wallAt(lx+1, ly-1))
-      val willBeBlockedOnTop: Boolean = willBeBlocked(lx, ly)
-      val willBeBlockedTopLeft: Boolean = willBeBlocked(lx - 1, ly)
-      val willBeBlockedTopRight: Boolean = willBeBlocked(lx + 1, ly)
-      val blockedFromSides: Boolean = blocked(lx - 1, ly) && blocked(lx + 1, ly)
-      val blockedBottom = wallBelow && blockedFromSides && willBeBlockedOnTop && (willBeBlockedTopLeft||willBeBlockedTopRight)
+      val blockedBottom = wallBelow && deadBottom(lx, ly)
       blockedLeft || blockedBottom || blockedRight
     }
  

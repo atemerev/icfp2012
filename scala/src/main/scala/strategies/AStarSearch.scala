@@ -20,6 +20,8 @@ trait AStarSearch {
     var isDeadEnd = false
     def isBad = isDeadEnd || {
       val r = state.status == "lost" || !state.mayGetToLift
+      println(state.w + " --- " + r)
+      state.mayGetToLift
       r
     }
     def eval: Double = {
