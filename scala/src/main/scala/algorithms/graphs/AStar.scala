@@ -8,7 +8,7 @@ import icfp.Trace
 
 class AStar[A,B] {
 
-  type searchNodeClass = (Double,Double,List[(Vertex[A,B], Edge[A, B])]) //f,g,path
+  type searchNodeClass = (Double,Double,List[(Vertex[A,B], Edge[A, B])], Vertex[A, B]) //f,g,path
   implicit def searchNodeClassToOrdered(thisSearchNode:searchNodeClass) : Ordered[searchNodeClass] = new Ordered[searchNodeClass]{
     def compare(thatSearchNode:searchNodeClass):Int = {
       val d = thatSearchNode._1 - thisSearchNode._1
@@ -21,15 +21,14 @@ class AStar[A,B] {
   def search(graph:Graph[A,B],s:Vertex[A,B],goal:(Vertex[A,B]) => Boolean,h:(Vertex[A,B]) => Double): List[Edge[A,B]] = {
     val node = searchTechicalities(graph, s, goal, h)
     val p = path(node)
-//    if (Trace.isEnabled) println("found: " + node + "(" + p + ")")
     p
   }
 
   def searchTechicalities(graph:Graph[A,B],s:Vertex[A,B],goal:(Vertex[A,B]) => Boolean,h:(Vertex[A,B]) => Double): searchNodeClass = {
     assume(graph.vertices.contains(s))
     s.tag = (0,Nil)
-    val Q = new BinomialHeap[searchNodeClass]((-1,0, Nil))
-    Q += (0,0,List((s, null)))
+    val Q = new BinomialHeap[searchNodeClass]((-1,0, Nil, s))
+    Q += (0,0,List((s, null)),s)
 
     val expanded = new HashSet[Vertex[A,B]]()
     val Qmap = new HashMap[Vertex[A,B],searchNodeClass]()
@@ -54,7 +53,7 @@ class AStar[A,B] {
             val v = e.v2
             val gVal = g(v)
             val f = gVal + h(v)
-            val Nv = (f,gVal,(v,e)::N._3)
+            val Nv = (f,gVal,(v,e)::N._3, v)
             if(Qmap.contains(v)){// if there already exists a path to this node from some other route
               val present = Qmap(v)
               if(present._2 > gVal){ // and the cost of that path is greater than this one

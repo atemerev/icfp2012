@@ -24,7 +24,9 @@ trait AStarSearch {
     }
     def eval: Double = {
       val sumDistances = world.distanceToLambdas(world.lift) + world.distanceToNearestLambda(world.robot)
-      if (isBad) SOME_STUPID_BIG_NUMBER else sumDistances * 100 + world.fromRobotToLift
+      if (isBad) SOME_STUPID_BIG_NUMBER else
+      if (sumDistances > 0) sumDistances * 100 + 1000 else
+                            world.fromRobotToLift
     }
     def theEnd = state.status == "won"
     override def toString = world.toString

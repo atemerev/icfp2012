@@ -108,15 +108,30 @@ trait DumbWorlds {
     }
 
     def blocked(x: Int, y: Int) = this(x, y) == Wall || this(x, y).isRock
-    def canFallFreelyFrom(x: Int, y: Int) = (1 to (y - 1)).foreach(apply(x,_) == Empty)
+    def canFallFreely(x: Int, yTo: Int, yFrom: Int): Boolean = (yTo to (yFrom - 1)).forall(apply(x,_) == Empty)
     def isPureRockAt(x:Int, y: Int) = apply(new Point(x, y)).toString == "*"
-    def rockWillBlock(x: Int) = (1 to h).find(isPureRockAt(x, _)).map(canFallFreelyFrom(x, _)).isDefined
-    def willBeBlocked(x: Int) = blocked(x, 1) || rockWillBlock(x)
+    def rockWillBlock(x: Int, y: Int): Boolean = {
+      val rockAbove: Option[Int] = (y to h).find(isPureRockAt(x, _))
+      rockAbove.map(canFallFreely(x, y, _)) getOrElse false
+    }
+    def willBeBlocked(x: Int, y: Int) = {
+      val blockedAlready: Boolean = blocked(x, y + 1)
+      val rockFalling: Boolean = rockWillBlock(x, y + 1)
+      blockedAlready || rockFalling
+    }
+    def wallAt(x: Int, y: Int) = apply(new Point(x, y)) == Wall
 
     def liftIsBlockedForever = {
-      val blockedLeft  = lift.x == 0 && (1 to lift.y).forall (blocked(1, _))
-      val blockedRight = lift.x == w-1 && (1 to lift.y).forall (blocked(w-2, _))
-      val blockedBottom = lift.y == 0  && willBeBlocked(lift.x) && (willBeBlocked(lift.x-1)||willBeBlocked(lift.x+1))
+      val lx = lift.x
+      val ly = lift.y
+      val blockedLeft  = lx == 0 && (1 to ly).forall (blocked(1, _))
+      val blockedRight = lx == w-1 && (1 to ly).forall (blocked(w-2, _))
+      val wallBelow = wallAt(lx, ly-1) && (wallAt(lx-1, ly-1) || wallAt(lx+1, ly-1))
+      val willBeBlockedOnTop: Boolean = willBeBlocked(lx, ly)
+      val willBeBlockedTopLeft: Boolean = willBeBlocked(lx - 1, ly)
+      val willBeBlockedTopRight: Boolean = willBeBlocked(lx + 1, ly)
+      val blockedFromSides: Boolean = blocked(lx - 1, ly) && blocked(lx + 1, ly)
+      val blockedBottom = wallBelow && blockedFromSides && willBeBlockedOnTop && (willBeBlockedTopLeft||willBeBlockedTopRight)
       blockedLeft || blockedBottom || blockedRight
     }
  
